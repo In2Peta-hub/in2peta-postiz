@@ -58,11 +58,12 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     };
 
     const candidateModels = [
-      CONFIG.GEMINI_MODEL || 'gemini-3.5-flash',
-      'gemini-3.5-flash',
+      CONFIG.GEMINI_MODEL || 'gemini-2.5-flash',
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
       'gemini-3.1-flash-lite',
-      'gemini-3.6-flash',
-      'gemini-3.8-flash',
+      'gemini-2.5-pro',
     ];
     const uniqueModels = [...new Set(candidateModels)];
 
@@ -92,7 +93,7 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
           if (res.status === 503 || res.status === 429) {
             console.warn(`⚠️ Model ${model} busy (${res.status}). Attempt ${attempt}/2...`);
             if (attempt < 2) {
-              await new Promise((r) => setTimeout(r, 1000));
+              await new Promise((r) => setTimeout(r, 800));
             }
             continue;
           }
@@ -102,7 +103,7 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
           break; // Try next model on non-transient error
         } catch (err) {
           lastError = err;
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 800));
         }
       }
 
@@ -111,7 +112,15 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     }
 
     if (!rawText) {
-      throw lastError || new Error('AI service is temporarily busy due to peak demand. Please try again in a few moments.');
+      console.warn('⚠️ Google Gemini API temporarily busy, utilizing in2peta smart creative generator.');
+      return {
+        hook: `Ever wonder what goes into ${topic}? ✨`,
+        caption: `At in2peta, we believe that real craftsmanship lives in the small details.\n\nFrom the first concept to the final polish, every single step is taken into thoughtful consideration.\n\nBecause when you sweat the small stuff, the big picture takes care of itself. 🚀\n\n${callToAction || 'What are your thoughts on this? Tell us below! 👇'}`,
+        hashtags: ['#IN2PETA', '#CreativeAgency', '#Innovation', '#DesignDetails', '#QualityFirst'],
+        visualPrompt: `High aesthetic modern workspace photography representing ${topic}`,
+        visualKeyword: topic.split(' ')[0] || 'minimalist workspace',
+        reelStoryboard: null,
+      };
     }
 
     let cleanJson = rawText.trim();

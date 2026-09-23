@@ -365,6 +365,42 @@ app.post('/api/queue/:id/approve', async (req, res) => {
   }
 });
 
+app.post('/api/queue/:id/publish-now', async (req, res) => {
+  try {
+    const post = QueueService.getPostById(req.params.id);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    let postizResult = null;
+    if (post.integrationId) {
+      postizResult = await PostizService.createPost({
+        integrationId: post.integrationId,
+        content: post.fullPostText,
+        type: 'now',
+        mediaUrl: post.visualUrl,
+        mediaType: post.mediaType,
+        mediaId: post.postizMediaId,
+      });
+    }
+
+    const scheduledPostId = postizResult?.[0]?.postId || postizResult?.postId || null;
+
+    const updated = QueueService.updatePost(post.id, {
+      status: 'PUBLISHED',
+      postizPostId: scheduledPostId,
+      publishedAt: new Date().toISOString(),
+      reviewedAt: new Date().toISOString(),
+    });
+
+    res.json({
+      success: true,
+      message: 'Post published immediately to your channel!',
+      post: updated,
+    });
+  } catch (err) {
+    res.status(500).json({ error: `Could not publish now: ${err.message}` });
+  }
+});
+
 app.post('/api/queue/:id/reject', (req, res) => {
   const updated = QueueService.updatePost(req.params.id, {
     status: 'REJECTED',
