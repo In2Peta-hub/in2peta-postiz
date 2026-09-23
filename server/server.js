@@ -440,6 +440,7 @@ app.get('*', (req, res, next) => {
   });
 });
 
-app.listen(CONFIG.PORT, () => {
-  console.log(`✨ in2peta Studio backend running on http://localhost:${CONFIG.PORT}`);
+app.listen(CONFIG.PORT, '0.0.0.0', () => {
+  console.log(`✨ in2peta Studio backend running on http://0.0.0.0:${CONFIG.PORT} (Local: http://localhost:${CONFIG.PORT})`);
+  TunnelService.getTunnelUrl().catch((err) => console.warn('Tunnel notice:', err.message));
 });

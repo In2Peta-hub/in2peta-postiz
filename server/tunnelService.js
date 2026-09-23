@@ -75,8 +75,8 @@ export class TunnelService {
     // 2. If cloudflared binary exists and process isn't spawned yet, spawn it and listen to stderr
     if (fs.existsSync(CLOUDFLARED_PATH) && !this.childProcess) {
       try {
-        console.log('🚀 Starting Cloudflare Tunnel for Postiz media publishing...');
-        this.childProcess = spawn(CLOUDFLARED_PATH, ['tunnel', '--url', 'http://localhost:4007'], {
+        console.log('🚀 Starting Cloudflare Tunnel for in2peta API & Media publishing (port 3005)...');
+        this.childProcess = spawn(CLOUDFLARED_PATH, ['tunnel', '--url', 'http://localhost:3005'], {
           stdio: ['ignore', 'pipe', 'pipe'],
         });
 
@@ -93,6 +93,13 @@ export class TunnelService {
             this.lastChecked = Date.now();
             const fullUrl = `https://${this.cachedHostname}`;
             this.savePersistedUrl(fullUrl);
+
+            // Also sync to mobile app config
+            try {
+              const mobileCfg = path.join(PROJECT_ROOT, 'postiz-mobile', 'src', 'services', 'tunnelConfig.json');
+              fs.writeFileSync(mobileCfg, JSON.stringify({ tunnelUrl: fullUrl }, null, 2));
+            } catch {}
+
             console.log(`✅ Cloudflare Tunnel ready: ${fullUrl}`);
           }
         };
