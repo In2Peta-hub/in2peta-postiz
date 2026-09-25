@@ -208,6 +208,9 @@ app.post('/api/generate', async (req, res) => {
       postizMediaId,
       mediaType = 'image', // 'image' | 'video'
       autoApproveOverride,
+      platforms,
+      platform,
+      status: requestedStatus,
     } = req.body;
 
     if (!topic) {
@@ -229,13 +232,16 @@ app.post('/api/generate', async (req, res) => {
     let channelName = channels.length > 0 ? channels[0].name : 'Instagram';
 
     const settings = QueueService.getSettings();
+    const isPaused = !!settings.isQueuePaused;
+    const isDraft = requestedStatus === 'DRAFT' || requestedStatus === 'IDEA';
     const shouldAutoApprove =
-      autoApproveOverride !== undefined ? !!autoApproveOverride : !!settings.autoApprove;
+      !isDraft && !isPaused && (autoApproveOverride !== undefined ? !!autoApproveOverride : !!settings.autoApprove);
 
     let postizResult = null;
-    let status = 'PENDING_REVIEW';
-    const scheduleTime =
-      scheduledDate || new Date(Date.now() + (settings.defaultScheduleDelayHours || 2) * 3600 * 1000).toISOString();
+    let status = isDraft ? requestedStatus : 'PENDING_REVIEW';
+    const scheduleTime = isDraft
+      ? (scheduledDate || null)
+      : (scheduledDate || new Date(Date.now() + (settings.defaultScheduleDelayHours || 2) * 3600 * 1000).toISOString());
 
     const fullPostText = [
       generated.hook,
@@ -285,8 +291,8 @@ app.post('/api/generate', async (req, res) => {
       reelStoryboard: generated.reelStoryboard,
       fullPostText,
       integrationId: finalIntegrationId,
-      integrationName: channelName,
-      platform: 'instagram',
+      platform: platform || (platforms && platforms[0]) || 'instagram',
+      platforms: platforms || [platform || 'instagram'],
       scheduledDate: scheduleTime,
       status,
       postizPostId: postizResult?.[0]?.postId || postizResult?.postId || null,

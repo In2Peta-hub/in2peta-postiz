@@ -10,6 +10,7 @@ const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const DEFAULT_DATA = {
   settings: {
     autoApprove: false,
+    isQueuePaused: false,
     defaultScheduleDelayHours: 2,
     preferredTone: 'Warm & Engaging',
     instagramHandle: '@in2peta.official',
@@ -98,7 +99,11 @@ export class QueueService {
       integrationId: postItem.integrationId,
       integrationName: postItem.integrationName || 'Instagram Account',
       platform: postItem.platform || 'instagram',
-      scheduledDate: postItem.scheduledDate || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      platforms: postItem.platforms || [postItem.platform || 'instagram'],
+      scheduledDate:
+        postItem.status === 'DRAFT' || postItem.status === 'IDEA'
+          ? postItem.scheduledDate || null
+          : postItem.scheduledDate || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       status: postItem.status || 'PENDING_REVIEW',
       postizPostId: postItem.postizPostId || null,
       postizMediaId: postItem.postizMediaId || null,
