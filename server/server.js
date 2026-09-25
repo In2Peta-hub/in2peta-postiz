@@ -17,7 +17,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Initialize queue storage
 QueueService.init();
@@ -39,74 +40,116 @@ const upload = multer({ storage });
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 /**
- * Direct Media Upload (For images or videos generated from in2peta)
- * Automatically uploads to AWS S3 (with IAM role assumption), registers in Postiz,
- * and falls back to Cloudflare Tunnel if S3 credentials are being configured.
+ * Direct Media Upload (For images or videos generated from in2peta or uploaded via mobile)
+ * Supports both standard multipart FormData and base64 JSON payloads.
+ * Automatically uploads to AWS S3, registers in Postiz, and provides Cloudflare Tunnel public URL.
  */
-app.post('/api/upload', upload.single('media'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No media file provided.' });
-  }
+app.post(
+  '/api/upload',
+  (req, res, next) => {
+    // If request has JSON body with base64, bypass multer
+    if (req.is('application/json') || req.body?.base64) {
+      return next();
+    }
+    upload.single('media')(req, res, next);
+  },
+  async (req, res) => {
+    let fileBuffer = null;
+    let originalname = 'media.jpg';
+    let mimetype = 'image/jpeg';
+    let savedFilename = '';
 
-  const isVideo = req.file.mimetype.startsWith('video/');
-  const fileBuffer = fs.readFileSync(req.file.path);
-  let s3Url = null;
-  let postizUpload = null;
+    if (req.file) {
+      fileBuffer = fs.readFileSync(req.file.path);
+      originalname = req.file.originalname;
+      mimetype = req.file.mimetype;
+      savedFilename = req.file.filename;
+    } else if (req.body?.base64) {
+      const rawBase64 = req.body.base64;
+      const matches = rawBase64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+      if (matches) {
+        mimetype = matches[1];
+        fileBuffer = Buffer.from(matches[2], 'base64');
+      } else {
+        mimetype = req.body.mimeType || 'image/jpeg';
+        fileBuffer = Buffer.from(rawBase64, 'base64');
+      }
+      const ext = mimetype.includes('png')
+        ? '.png'
+        : mimetype.includes('webp')
+        ? '.webp'
+        : mimetype.includes('mp4')
+        ? '.mp4'
+        : '.jpg';
+      originalname = req.body.filename || `in2peta_mobile_${Date.now()}${ext}`;
+      savedFilename = `in2peta_media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${ext}`;
+      const filePath = path.join(UPLOADS_DIR, savedFilename);
+      fs.writeFileSync(filePath, fileBuffer);
+    } else {
+      return res.status(400).json({ error: 'No media file or base64 data provided.' });
+    }
 
-  // 1. Attempt upload to AWS S3 bucket (in2peta-postiz-media)
-  try {
-    s3Url = await S3Service.uploadMedia(fileBuffer, req.file.originalname, req.file.mimetype);
-  } catch (err) {
-    console.warn('S3 upload notice:', err.message);
-  }
+    const isVideo = mimetype.startsWith('video/');
+    let s3Url = null;
+    let postizUpload = null;
 
-  // 2. Also register in Postiz storage
-  try {
-    const blob = new Blob([fileBuffer], { type: req.file.mimetype });
-    const form = new FormData();
-    form.append('file', blob, req.file.originalname);
+    // 1. Attempt upload to AWS S3 bucket (in2peta-postiz-media)
+    try {
+      s3Url = await S3Service.uploadMedia(fileBuffer, originalname, mimetype);
+    } catch (err) {
+      console.warn('S3 upload notice:', err.message);
+    }
 
-    const postizRes = await fetch(`${CONFIG.POSTIZ_API_URL}/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': CONFIG.POSTIZ_API_KEY,
-      },
-      body: form,
+    // 2. Also register in Postiz storage
+    try {
+      const blob = new Blob([fileBuffer], { type: mimetype });
+      const form = new FormData();
+      form.append('file', blob, originalname);
+
+      const postizRes = await fetch(`${CONFIG.POSTIZ_API_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: CONFIG.POSTIZ_API_KEY,
+        },
+        body: form,
+      });
+
+      if (postizRes.ok) {
+        postizUpload = await postizRes.json();
+        console.log('✅ File registered in Postiz store:', postizUpload);
+      } else {
+        console.warn('Postiz upload failed with status:', postizRes.status, await postizRes.text());
+      }
+    } catch (err) {
+      console.warn('Postiz direct file sync warning:', err.message);
+    }
+
+    // 3. Resolve public HTTPS URL: Prioritize AWS S3 permanent URL, fallback to Cloudflare Tunnel
+    let publicUrl = s3Url;
+    if (!publicUrl) {
+      if (postizUpload?.path) {
+        publicUrl = await TunnelService.toPublicMediaUrl(postizUpload.path);
+      } else {
+        publicUrl = await TunnelService.toPublicMediaUrl(`/uploads/${savedFilename}`);
+      }
+    }
+
+    console.log(`☁️ Media successfully resolved for social publishing: ${publicUrl}`);
+
+    res.json({
+      url: publicUrl,
+      s3Url: s3Url || null,
+      storageEngine: s3Url ? 'AWS S3 (in2peta-postiz-media)' : 'Cloudflare Tunnel (Local)',
+      localUrl: `/uploads/${savedFilename}`,
+      filename: savedFilename,
+      mimetype: mimetype,
+      size: fileBuffer.length,
+      postizMediaId: postizUpload?.id || null,
+      postizPath: postizUpload?.path || null,
+      mediaType: isVideo ? 'video' : 'image',
     });
-
-    if (postizRes.ok) {
-      postizUpload = await postizRes.json();
-      console.log('✅ File registered in Postiz store:', postizUpload);
-    } else {
-      console.warn('Postiz upload failed with status:', postizRes.status, await postizRes.text());
-    }
-  } catch (err) {
-    console.warn('Postiz direct file sync warning:', err.message);
   }
-
-  // 3. Resolve public HTTPS URL: Prioritize AWS S3 permanent URL, fallback to Cloudflare Tunnel
-  let publicUrl = s3Url;
-  if (!publicUrl) {
-    if (postizUpload?.path) {
-      publicUrl = await TunnelService.toPublicMediaUrl(postizUpload.path);
-    } else {
-      publicUrl = await TunnelService.toPublicMediaUrl(`/uploads/${req.file.filename}`);
-    }
-  }
-
-  res.json({
-    url: publicUrl,
-    s3Url: s3Url || null,
-    storageEngine: s3Url ? 'AWS S3 (in2peta-postiz-media)' : 'Cloudflare Tunnel (Local)',
-    localUrl: `/uploads/${req.file.filename}`,
-    filename: req.file.filename,
-    mimetype: req.file.mimetype,
-    size: req.file.size,
-    postizMediaId: postizUpload?.id || null,
-    postizPath: postizUpload?.path || null,
-    mediaType: isVideo ? 'video' : 'image',
-  });
-});
+);
 
 /**
  * Clean Platform Status (including S3 and Tunnel)

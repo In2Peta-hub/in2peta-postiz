@@ -96,6 +96,13 @@ export class PostizService {
         };
       }
 
+      // 0. Guard against mobile client local filesystem URIs (e.g. file:///data/user/0/...)
+      if (mediaUrl.startsWith('file://')) {
+        console.warn('⚠️ Received mobile client local URI (file://). Falling back to cloud visual:', mediaUrl);
+        const fallbackStock = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&auto=format&fit=crop&q=80';
+        return await this.resolveMediaObject(fallbackStock, mediaId);
+      }
+
       // 3. For any external image (Unsplash, in2peta, web) without extension:
       // Download the image buffer and upload it directly to Postiz /upload as a multipart file!
       console.log('🔄 Downloading and uploading media to Postiz storage:', mediaUrl);
