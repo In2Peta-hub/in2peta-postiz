@@ -14,6 +14,14 @@ import { S3Service } from './s3Service.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Ensure process resilience against background network errors
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Handled Uncaught Exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ Handled Unhandled Rejection:', reason?.message || reason);
+});
+
 const app = express();
 
 app.use(cors());
