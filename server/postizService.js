@@ -8,6 +8,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
 
+let isPostizOffline = false;
+let lastPostizCheckTime = 0;
+const POSTIZ_RETRY_INTERVAL_MS = 60000; // Check once per minute when offline
+
 export class PostizService {
   static getHeaders() {
     return {
@@ -18,20 +22,35 @@ export class PostizService {
   }
 
   /**
-   * Fetch connected channels/integrations from Postiz (e.g. Facebook Mytestpage)
+   * Fetch connected channels/integrations from Postiz (e.g. Facebook Page)
    */
   static async getIntegrations() {
+    const now = Date.now();
+    // If Postiz was recently confirmed offline, return [] immediately to keep app fast
+    if (isPostizOffline && (now - lastPostizCheckTime) < POSTIZ_RETRY_INTERVAL_MS) {
+      return [];
+    }
+
     try {
       const res = await fetch(`${CONFIG.POSTIZ_API_URL}/integrations`, {
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(2000),
       });
       if (!res.ok) {
-        throw new Error(`Failed to fetch integrations: ${res.status} ${res.statusText}`);
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
       }
-      return await res.json();
+      const data = await res.json();
+      if (isPostizOffline) {
+        console.log('✅ Postiz service reconnected on port 4007');
+        isPostizOffline = false;
+      }
+      return data;
     } catch (err) {
-      console.error('Error fetching integrations from Postiz:', err.message);
+      lastPostizCheckTime = Date.now();
+      if (!isPostizOffline) {
+        console.log('ℹ️ Postiz service (port 4007) is offline. Operating in standalone studio mode.');
+        isPostizOffline = true;
+      }
       return [];
     }
   }
@@ -215,6 +234,8 @@ export class PostizService {
    * Fetch posts from Postiz to monitor publishing status
    */
   static async getPosts(startDate, endDate) {
+    if (isPostizOffline) return [];
+
     try {
       const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const end = endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -222,6 +243,7 @@ export class PostizService {
       const url = `${CONFIG.POSTIZ_API_URL}/posts?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
       const res = await fetch(url, {
         headers: this.getHeaders(),
+        signal: AbortSignal.timeout(2000),
       });
       if (!res.ok) {
         throw new Error(`Failed to fetch posts: ${res.status}`);
@@ -229,7 +251,6 @@ export class PostizService {
       const data = await res.json();
       return data.posts || [];
     } catch (err) {
-      console.error('Error fetching posts from Postiz:', err.message);
       return [];
     }
   }
