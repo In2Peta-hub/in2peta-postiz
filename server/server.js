@@ -93,36 +93,42 @@ app.post(
     let s3Url = null;
     let postizUpload = null;
 
-    // 1. Attempt upload to AWS S3 bucket (in2peta-postiz-media)
-    try {
-      s3Url = await S3Service.uploadMedia(fileBuffer, originalname, mimetype);
-    } catch (err) {
-      console.warn('S3 upload notice:', err.message);
-    }
+    // Execute AWS S3 upload and Postiz registration concurrently for maximum speed
+    await Promise.all([
+      // 1. Attempt upload to AWS S3 bucket (in2peta-postiz-media)
+      (async () => {
+        try {
+          s3Url = await S3Service.uploadMedia(fileBuffer, originalname, mimetype);
+        } catch (err) {
+          console.warn('S3 upload notice:', err.message);
+        }
+      })(),
+      // 2. Also register in Postiz storage
+      (async () => {
+        try {
+          const blob = new Blob([fileBuffer], { type: mimetype });
+          const form = new FormData();
+          form.append('file', blob, originalname);
 
-    // 2. Also register in Postiz storage
-    try {
-      const blob = new Blob([fileBuffer], { type: mimetype });
-      const form = new FormData();
-      form.append('file', blob, originalname);
+          const postizRes = await fetch(`${CONFIG.POSTIZ_API_URL}/upload`, {
+            method: 'POST',
+            headers: {
+              Authorization: CONFIG.POSTIZ_API_KEY,
+            },
+            body: form,
+          });
 
-      const postizRes = await fetch(`${CONFIG.POSTIZ_API_URL}/upload`, {
-        method: 'POST',
-        headers: {
-          Authorization: CONFIG.POSTIZ_API_KEY,
-        },
-        body: form,
-      });
-
-      if (postizRes.ok) {
-        postizUpload = await postizRes.json();
-        console.log('✅ File registered in Postiz store:', postizUpload);
-      } else {
-        console.warn('Postiz upload failed with status:', postizRes.status, await postizRes.text());
-      }
-    } catch (err) {
-      console.warn('Postiz direct file sync warning:', err.message);
-    }
+          if (postizRes.ok) {
+            postizUpload = await postizRes.json();
+            console.log('✅ File registered in Postiz store:', postizUpload);
+          } else {
+            console.warn('Postiz upload failed with status:', postizRes.status, await postizRes.text());
+          }
+        } catch (err) {
+          console.warn('Postiz direct file sync warning:', err.message);
+        }
+      })(),
+    ]);
 
     // 3. Resolve public HTTPS URL: Prioritize AWS S3 permanent URL, fallback to Cloudflare Tunnel
     let publicUrl = s3Url;
