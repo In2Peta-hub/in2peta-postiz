@@ -67,6 +67,14 @@ export class TunnelService {
    * Get the current live Cloudflare Quick Tunnel public URL
    */
   static async getTunnelUrl() {
+    // 0. If deployed on Render or cloud platform with public HTTPS URL, use it directly
+    if (process.env.PUBLIC_BACKEND_URL) {
+      return process.env.PUBLIC_BACKEND_URL.replace(/\/$/, '');
+    }
+    if (process.env.RENDER_EXTERNAL_URL) {
+      return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
+    }
+
     // 1. If child process is running and hostname is cached, return it
     if (this.childProcess && this.cachedHostname && Date.now() - this.lastChecked < 60000) {
       return `https://${this.cachedHostname}`;
