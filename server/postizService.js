@@ -24,6 +24,7 @@ export class PostizService {
     try {
       const res = await fetch(`${CONFIG.POSTIZ_API_URL}/integrations`, {
         headers: this.getHeaders(),
+        signal: AbortSignal.timeout(3000),
       });
       if (!res.ok) {
         throw new Error(`Failed to fetch integrations: ${res.status} ${res.statusText}`);

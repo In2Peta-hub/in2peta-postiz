@@ -196,46 +196,29 @@ app.post('/api/settings', (req, res) => {
 app.get('/api/channels', async (req, res) => {
   try {
     const integrations = await PostizService.getIntegrations();
-    const settings = QueueService.getSettings();
+    const queue = QueueService.getQueue();
 
-    const mapped = integrations.map((ch) => ({
-      id: ch.id,
-      name: ch.name,
-      handle: `@${ch.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-      platform: ch.identifier || 'facebook',
-      followers: '14.2K',
-      postsCount: 128,
-      avatar: ch.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-      connected: !ch.disabled,
-    }));
+    const mapped = (integrations || []).map((ch) => {
+      // Calculate real count of posts targeted to this channel in the user's pipeline
+      const channelPostsCount = queue.filter(
+        (p) => p.integrationId === ch.id || (p.platforms && p.platforms.includes(ch.identifier))
+      ).length;
 
-    if (mapped.length === 0) {
-      mapped.push({
-        id: 'in2peta_creator_1',
-        name: 'in2peta Official',
-        handle: settings.instagramHandle || '@in2peta.official',
-        platform: 'instagram',
-        followers: '28.5K',
-        postsCount: 312,
-        avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
-        connected: true,
-      });
-    }
+      return {
+        id: ch.id,
+        name: ch.name,
+        handle: `@${ch.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        platform: ch.identifier || 'facebook',
+        postsCount: channelPostsCount,
+        avatar: ch.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        connected: !ch.disabled,
+      };
+    });
 
     res.json(mapped);
   } catch (err) {
-    res.json([
-      {
-        id: 'in2peta_creator_1',
-        name: 'in2peta Official',
-        handle: '@in2peta.official',
-        platform: 'instagram',
-        followers: '28.5K',
-        postsCount: 312,
-        avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
-        connected: true,
-      },
-    ]);
+    console.error('Error fetching real channels:', err);
+    res.json([]);
   }
 });
 
