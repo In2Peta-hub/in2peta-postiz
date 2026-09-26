@@ -93,17 +93,37 @@ app.post(
     let s3Url = null;
     let postizUpload = null;
 
-    // Execute AWS S3 upload and Postiz registration concurrently for maximum speed
-    await Promise.all([
-      // 1. Attempt upload to AWS S3 bucket (in2peta-postiz-media)
-      (async () => {
-        try {
-          s3Url = await S3Service.uploadMedia(fileBuffer, originalname, mimetype);
-        } catch (err) {
-          console.warn('S3 upload notice:', err.message);
-        }
-      })(),
-      // 2. Also register in Postiz storage
+    // 1. Primary Cloud Storage: Upload directly to AWS S3 bucket (in2peta-postiz-media)
+    try {
+      s3Url = await S3Service.uploadMedia(fileBuffer, originalname, mimetype);
+    } catch (err) {
+      console.warn('S3 upload notice:', err.message);
+    }
+
+    // 2. Resolve public HTTPS URL: Prioritize AWS S3 permanent URL, fallback to Cloudflare Tunnel
+    let publicUrl = s3Url;
+    if (!publicUrl) {
+      publicUrl = await TunnelService.toPublicMediaUrl(`/uploads/${savedFilename}`);
+    }
+
+    console.log(`☁️ Media successfully resolved for social publishing: ${publicUrl}`);
+
+    // 3. Immediately respond to client with cloud URL (resolves in ~1s!)
+    res.json({
+      url: publicUrl,
+      s3Url: s3Url || null,
+      storageEngine: s3Url ? 'AWS S3 (in2peta-postiz-media)' : 'Cloudflare Tunnel (Local)',
+      localUrl: `/uploads/${savedFilename}`,
+      filename: savedFilename,
+      mimetype: mimetype,
+      size: fileBuffer.length,
+      postizMediaId: null,
+      postizPath: null,
+      mediaType: isVideo ? 'video' : 'image',
+    });
+
+    // 4. Background Postiz sync (Non-blocking: only if Postiz container is actively online)
+    if (!PostizService.isOffline()) {
       (async () => {
         try {
           const blob = new Blob([fileBuffer], { type: mimetype });
@@ -116,44 +136,18 @@ app.post(
               Authorization: CONFIG.POSTIZ_API_KEY,
             },
             body: form,
+            signal: AbortSignal.timeout(2000),
           });
 
           if (postizRes.ok) {
-            postizUpload = await postizRes.json();
+            const postizUpload = await postizRes.json();
             console.log('✅ File registered in Postiz store:', postizUpload);
-          } else {
-            console.warn('Postiz upload failed with status:', postizRes.status, await postizRes.text());
           }
         } catch (err) {
-          console.warn('Postiz direct file sync warning:', err.message);
+          // Non-blocking sync notice
         }
-      })(),
-    ]);
-
-    // 3. Resolve public HTTPS URL: Prioritize AWS S3 permanent URL, fallback to Cloudflare Tunnel
-    let publicUrl = s3Url;
-    if (!publicUrl) {
-      if (postizUpload?.path) {
-        publicUrl = await TunnelService.toPublicMediaUrl(postizUpload.path);
-      } else {
-        publicUrl = await TunnelService.toPublicMediaUrl(`/uploads/${savedFilename}`);
-      }
+      })();
     }
-
-    console.log(`☁️ Media successfully resolved for social publishing: ${publicUrl}`);
-
-    res.json({
-      url: publicUrl,
-      s3Url: s3Url || null,
-      storageEngine: s3Url ? 'AWS S3 (in2peta-postiz-media)' : 'Cloudflare Tunnel (Local)',
-      localUrl: `/uploads/${savedFilename}`,
-      filename: savedFilename,
-      mimetype: mimetype,
-      size: fileBuffer.length,
-      postizMediaId: postizUpload?.id || null,
-      postizPath: postizUpload?.path || null,
-      mediaType: isVideo ? 'video' : 'image',
-    });
   }
 );
 

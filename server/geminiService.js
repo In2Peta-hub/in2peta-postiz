@@ -58,12 +58,12 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     };
 
     const candidateModels = [
-      CONFIG.GEMINI_MODEL || 'gemini-2.5-flash',
-      'gemini-2.5-flash',
-      'gemini-flash-latest',
-      'gemini-2.5-flash-lite',
+      CONFIG.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-3-flash-preview',
       'gemini-3.1-flash-lite',
-      'gemini-2.5-pro',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
     ];
     const uniqueModels = [...new Set(candidateModels)];
 
@@ -73,42 +73,36 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     for (const model of uniqueModels) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CONFIG.GEMINI_API_KEY}`;
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8000),
+        });
 
-          if (res.ok) {
-            const data = await res.json();
-            rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              console.log(`✨ Successfully generated caption using ${model}`);
-              break;
-            }
+        if (res.ok) {
+          const data = await res.json();
+          rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            console.log(`✨ Successfully generated caption using ${model}`);
+            break;
           }
-
-          if (res.status === 503 || res.status === 429) {
-            console.warn(`⚠️ Model ${model} busy (${res.status}). Attempt ${attempt}/2...`);
-            if (attempt < 2) {
-              await new Promise((r) => setTimeout(r, 800));
-            }
-            continue;
-          }
-
-          const errorText = await res.text();
-          lastError = new Error(`AI error (${res.status}): ${errorText}`);
-          break; // Try next model on non-transient error
-        } catch (err) {
-          lastError = err;
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 800));
         }
+
+        if (res.status === 503 || res.status === 429) {
+          console.warn(`⚠️ Model ${model} busy (${res.status}), trying next candidate model...`);
+          continue;
+        }
+
+        const errorText = await res.text();
+        lastError = new Error(`AI error (${res.status}): ${errorText}`);
+      } catch (err) {
+        lastError = err;
+        console.warn(`⚠️ Model ${model} failed (${err.message}), trying next candidate...`);
       }
 
       if (rawText) break; // Success! No need to try further fallback models
-      console.log(`🔄 Switching to next fallback model...`);
     }
 
     if (!rawText) {
