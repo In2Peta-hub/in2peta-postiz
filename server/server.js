@@ -197,30 +197,59 @@ app.post('/api/settings', (req, res) => {
  */
 app.get('/api/channels', async (req, res) => {
   try {
-    const integrations = await PostizService.getIntegrations();
+    let integrations = [];
+    if (!PostizService.isOffline()) {
+      integrations = await PostizService.getIntegrations();
+    }
     const queue = QueueService.getQueue();
 
-    const mapped = (integrations || []).map((ch) => {
-      // Calculate real count of posts targeted to this channel in the user's pipeline
-      const channelPostsCount = queue.filter(
-        (p) => p.integrationId === ch.id || (p.platforms && p.platforms.includes(ch.identifier))
-      ).length;
+    if (integrations && integrations.length > 0) {
+      const mapped = integrations.map((ch) => {
+        const channelPostsCount = queue.filter(
+          (p) => p.integrationId === ch.id || (p.platforms && p.platforms.includes(ch.identifier))
+        ).length;
 
+        return {
+          id: ch.id,
+          name: ch.name,
+          handle: `@${ch.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          platform: ch.identifier || 'instagram',
+          postsCount: channelPostsCount,
+          avatar: ch.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          connected: !ch.disabled,
+          provider: 'Meta Graph API',
+        };
+      });
+      QueueService.saveChannels(mapped);
+      return res.json(mapped);
+    }
+
+    // When operating in standalone mode or Postiz container is offline, return persistent channels
+    const persisted = QueueService.getChannels();
+    const mapped = persisted.map((ch) => {
+      const channelPostsCount = queue.filter(
+        (p) => p.integrationId === ch.id || (p.platforms && p.platforms.includes(ch.platform))
+      ).length;
       return {
-        id: ch.id,
-        name: ch.name,
-        handle: `@${ch.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-        platform: ch.identifier || 'facebook',
+        ...ch,
         postsCount: channelPostsCount,
-        avatar: ch.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        connected: !ch.disabled,
+        connected: true,
       };
     });
 
     res.json(mapped);
   } catch (err) {
-    console.error('Error fetching real channels:', err);
-    res.json([]);
+    console.error('Error fetching channels:', err);
+    res.json(QueueService.getChannels());
+  }
+});
+
+app.post('/api/channels', (req, res) => {
+  try {
+    const updated = QueueService.addChannel(req.body);
+    res.json({ success: true, channels: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
