@@ -163,7 +163,8 @@ app.post(
  * Clean Platform Status (including S3 and Tunnel)
  */
 app.get('/api/health', async (req, res) => {
-  const integrations = await PostizService.getIntegrations();
+  const channels = QueueService.getChannels();
+  const activeChannel = channels.length > 0 ? channels[0] : null;
   const settings = QueueService.getSettings();
   const tunnelUrl = await TunnelService.getTunnelUrl();
   const s3Status = await S3Service.checkStatus();
@@ -172,8 +173,8 @@ app.get('/api/health', async (req, res) => {
     status: 'healthy',
     textEngine: 'in2peta Smart AI Engine',
     mediaEngine: 'in2peta Explore (Images & Videos)',
-    publishingEngine: integrations.length > 0 ? 'Connected' : 'Standby',
-    activeAccount: integrations.length > 0 ? integrations[0].name : 'No account linked',
+    publishingEngine: activeChannel ? 'Connected' : 'Standby',
+    activeAccount: activeChannel ? `${activeChannel.name} (${activeChannel.handle})` : 'No account linked',
     autoApprove: settings.autoApprove,
     tunnelUrl: tunnelUrl || 'Local Mode',
     s3Storage: s3Status,
