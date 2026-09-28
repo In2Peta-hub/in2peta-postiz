@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 
 export class GeminiService {
   /**
-   * Generate Instagram-native content and visual assets using in2peta AI
+   * Generate Instagram-native content and visual assets using Growthcrew AI
    */
   static async generatePost({
     topic,
@@ -13,7 +13,7 @@ export class GeminiService {
   }) {
     const isReel = format === 'reel';
 
-    const prompt = `You are in2peta AI, an elite Instagram social media strategist and creative director.
+    const prompt = `You are Growthcrew AI, an elite Instagram social media strategist and creative director.
 Generate a captivating, high-performing Instagram ${isReel ? 'Reel script and visual concept' : 'feed post and visual asset'}.
 
 Topic / Theme: ${topic}
@@ -106,11 +106,11 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     }
 
     if (!rawText) {
-      console.warn('⚠️ Google Gemini API temporarily busy, utilizing in2peta smart creative generator.');
+      console.warn('⚠️ Google Gemini API temporarily busy, utilizing Growthcrew smart creative generator.');
       return {
         hook: `Ever wonder what goes into ${topic}? ✨`,
-        caption: `At in2peta, we believe that real craftsmanship lives in the small details.\n\nFrom the first concept to the final polish, every single step is taken into thoughtful consideration.\n\nBecause when you sweat the small stuff, the big picture takes care of itself. 🚀\n\n${callToAction || 'What are your thoughts on this? Tell us below! 👇'}`,
-        hashtags: ['#IN2PETA', '#CreativeAgency', '#Innovation', '#DesignDetails', '#QualityFirst'],
+        caption: `At Growthcrew, we believe that real craftsmanship lives in the small details.\n\nFrom the first concept to the final polish, every single step is taken into thoughtful consideration.\n\nBecause when you sweat the small stuff, the big picture takes care of itself. 🚀\n\n${callToAction || 'What are your thoughts on this? Tell us below! 👇'}`,
+        hashtags: ['#GROWTHCREW', '#CreativeAgency', '#Innovation', '#DesignDetails', '#QualityFirst'],
         visualPrompt: `High aesthetic modern workspace photography representing ${topic}`,
         visualKeyword: topic.split(' ')[0] || 'minimalist workspace',
         reelStoryboard: null,

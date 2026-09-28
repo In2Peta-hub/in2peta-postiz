@@ -1,7 +1,7 @@
 {
   "name": "admin-approval-portal",
   "version": "1.0.0",
-  "description": "Custom Client Admin & Post Approval Portal for in2peta Social Studio",
+  "description": "Custom Client Admin & Post Approval Portal for Growthcrew Social Studio",
   "type": "module",
   "main": "server/server.js",
   "scripts": {

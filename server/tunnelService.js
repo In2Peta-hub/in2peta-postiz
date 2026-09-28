@@ -83,7 +83,7 @@ export class TunnelService {
     // 2. If cloudflared binary exists and process isn't spawned yet, spawn it and listen to stderr
     if (fs.existsSync(CLOUDFLARED_PATH) && !this.childProcess) {
       try {
-        console.log('🚀 Starting Cloudflare Tunnel for in2peta API & Media publishing (port 3005)...');
+        console.log('🚀 Starting Cloudflare Tunnel for Growthcrew API & Media publishing (port 3005)...');
         this.childProcess = spawn(CLOUDFLARED_PATH, ['tunnel', '--url', 'http://localhost:3005'], {
           stdio: ['ignore', 'pipe', 'pipe'],
         });

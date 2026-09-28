@@ -171,8 +171,8 @@ app.get('/api/health', async (req, res) => {
 
   res.json({
     status: 'healthy',
-    textEngine: 'in2peta Smart AI Engine',
-    mediaEngine: 'in2peta Explore (Images & Videos)',
+    textEngine: 'Growthcrew Smart AI Engine',
+    mediaEngine: 'Growthcrew Media Platform (Images & Videos)',
     publishingEngine: activeChannel ? 'Connected' : 'Standby',
     activeAccount: activeChannel ? `${activeChannel.name} (${activeChannel.handle})` : 'No account linked',
     autoApprove: settings.autoApprove,
@@ -547,6 +547,6 @@ app.get('*', (req, res, next) => {
 });
 
 app.listen(CONFIG.PORT, '0.0.0.0', () => {
-  console.log(`✨ in2peta Studio backend running on http://0.0.0.0:${CONFIG.PORT} (Local: http://localhost:${CONFIG.PORT})`);
+  console.log(`✨ Growthcrew Studio backend running on http://0.0.0.0:${CONFIG.PORT} (Local: http://localhost:${CONFIG.PORT})`);
   TunnelService.getTunnelUrl().catch((err) => console.warn('Tunnel notice:', err.message));
 });

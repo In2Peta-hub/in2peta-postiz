@@ -13,7 +13,7 @@ const DEFAULT_DATA = {
     isQueuePaused: false,
     defaultScheduleDelayHours: 2,
     preferredTone: 'Warm & Engaging',
-    instagramHandle: '@in2peta.official',
+    instagramHandle: '@growthcrew.official',
   },
   queue: [],
 };
