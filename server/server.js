@@ -310,7 +310,7 @@ app.post('/api/generate', async (req, res) => {
     const fullPostText = [
       generated.hook,
       generated.caption,
-      callToAction,
+      callToAction && !generated.caption.includes(callToAction) ? callToAction : null,
       (generated.hashtags || []).join(' '),
     ]
       .filter(Boolean)

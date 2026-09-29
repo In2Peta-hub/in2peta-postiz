@@ -8,7 +8,7 @@ export class GeminiService {
     topic,
     tone = 'Warm & Friendly',
     format = 'feed', // 'feed' | 'reel'
-    callToAction = 'Drop a comment or DM us!',
+    callToAction = '',
     customInstructions = '',
   }) {
     const isReel = format === 'reel';
@@ -19,7 +19,7 @@ Generate a captivating, high-performing Instagram ${isReel ? 'Reel script and vi
 Topic / Theme: ${topic}
 Tone of Voice: ${tone}
 Format: ${isReel ? 'Instagram Reel (Short-form Video)' : 'Instagram Feed Post (Image/Carousel)'}
-${callToAction ? `Call To Action: ${callToAction}` : ''}
+${callToAction ? `Call To Action: ${callToAction}` : 'Call To Action: Generate a natural, organic call to action at the end of the caption tailored specifically to this topic.'}
 ${customInstructions ? `Special Instructions: ${customInstructions}` : ''}
 
 CRITICAL INSTAGRAM GUIDELINES:
