@@ -14,20 +14,19 @@ class S3Service:
     def get_client(cls):
         if cls._s3_client is None:
             try:
-                if CONFIG.AWS_ACCESS_KEY_ID and CONFIG.AWS_SECRET_ACCESS_KEY:
-                    cls._s3_client = boto3.client(
-                        's3',
-                        region_name=CONFIG.AWS_REGION,
-                        aws_access_key_id=CONFIG.AWS_ACCESS_KEY_ID,
-                        aws_secret_access_key=CONFIG.AWS_SECRET_ACCESS_KEY
+                access_key = CONFIG.AWS_ACCESS_KEY_ID or os.getenv("AWS_ACCESS_KEY_ID")
+                secret_key = CONFIG.AWS_SECRET_ACCESS_KEY or os.getenv("AWS_SECRET_ACCESS_KEY")
+                region = CONFIG.AWS_REGION or os.getenv("AWS_REGION", "ap-southeast-2")
+
+                if access_key and secret_key:
+                    session = boto3.Session(
+                        aws_access_key_id=access_key.strip(),
+                        aws_secret_access_key=secret_key.strip(),
+                        region_name=region.strip()
                     )
+                    cls._s3_client = session.client('s3')
                 else:
-                    profile = os.getenv("AWS_PROFILE", "postiz-dev")
-                    try:
-                        session = boto3.Session(profile_name=profile, region_name=CONFIG.AWS_REGION)
-                        cls._s3_client = session.client('s3')
-                    except Exception:
-                        cls._s3_client = boto3.client('s3', region_name=CONFIG.AWS_REGION)
+                    cls._s3_client = boto3.client('s3', region_name=region)
             except Exception as e:
                 print(f"⚠️ S3 Client initialization warning: {e}")
         return cls._s3_client
