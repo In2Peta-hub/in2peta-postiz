@@ -28,6 +28,7 @@ import {
   Share2,
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
 const INSTA_GRADIENT = 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600';
 const IN2PETA_EXPLORE_URL = 'https://www.in2peta.com/explore';
 
@@ -119,11 +120,11 @@ export default function App() {
   const fetchData = async () => {
     try {
       const [settingsRes, channelsRes, queueRes, pubRes, healthRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch('/api/channels'),
-        fetch('/api/queue'),
-        fetch('/api/published'),
-        fetch('/api/health'),
+        fetch(`${API_BASE}/api/settings`),
+        fetch(`${API_BASE}/api/channels`),
+        fetch(`${API_BASE}/api/queue`),
+        fetch(`${API_BASE}/api/published`),
+        fetch(`${API_BASE}/api/health`),
       ]);
 
       if (settingsRes.ok) setSettings(await settingsRes.json());
@@ -150,7 +151,7 @@ export default function App() {
   const handleToggleAutoApprove = async () => {
     const nextVal = !settings.autoApprove;
     try {
-      const res = await fetch('/api/settings', {
+      const res = await fetch(`${API_BASE}/api/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ autoApprove: nextVal }),
@@ -190,7 +191,7 @@ export default function App() {
 
     setIsUploading(true);
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -250,7 +251,7 @@ export default function App() {
 
     setIsGenerating(true);
     try {
-      const res = await fetch('/api/generate', {
+      const res = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -293,7 +294,7 @@ export default function App() {
   const handleApprove = async (postId) => {
     setActionLoading(postId);
     try {
-      const res = await fetch(`/api/queue/${postId}/approve`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/queue/${postId}/approve`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Approval failed');
 
@@ -312,7 +313,7 @@ export default function App() {
   const handleReject = async (postId) => {
     setActionLoading(postId);
     try {
-      await fetch(`/api/queue/${postId}/reject`, {
+      await fetch(`${API_BASE}/api/queue/${postId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Archived by user' }),
@@ -330,7 +331,7 @@ export default function App() {
   const handleDelete = async (postId) => {
     if (!confirm('Remove this post from your queue?')) return;
     try {
-      await fetch(`/api/queue/${postId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/queue/${postId}`, { method: 'DELETE' });
       showToast('Post deleted', 'info');
       fetchData();
     } catch {
@@ -351,7 +352,7 @@ export default function App() {
         .filter(Boolean)
         .join('\n\n');
 
-      const res = await fetch(`/api/queue/${editingPost.id}`, {
+      const res = await fetch(`${API_BASE}/api/queue/${editingPost.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
