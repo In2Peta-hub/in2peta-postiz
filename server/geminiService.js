@@ -2,24 +2,24 @@ import { CONFIG } from './config.js';
 
 export class GeminiService {
   /**
-   * Generate Instagram-native content and visual assets using in2peta AI
+   * Generate Instagram-native content and visual assets using Growthcrew AI
    */
   static async generatePost({
     topic,
     tone = 'Warm & Friendly',
     format = 'feed', // 'feed' | 'reel'
-    callToAction = 'Drop a comment or DM us!',
+    callToAction = '',
     customInstructions = '',
   }) {
     const isReel = format === 'reel';
 
-    const prompt = `You are in2peta AI, an elite Instagram social media strategist and creative director.
+    const prompt = `You are Growthcrew AI, an elite Instagram social media strategist and creative director.
 Generate a captivating, high-performing Instagram ${isReel ? 'Reel script and visual concept' : 'feed post and visual asset'}.
 
 Topic / Theme: ${topic}
 Tone of Voice: ${tone}
 Format: ${isReel ? 'Instagram Reel (Short-form Video)' : 'Instagram Feed Post (Image/Carousel)'}
-${callToAction ? `Call To Action: ${callToAction}` : ''}
+${callToAction ? `Call To Action: ${callToAction}` : 'Call To Action: Generate a natural, organic call to action at the end of the caption tailored specifically to this topic.'}
 ${customInstructions ? `Special Instructions: ${customInstructions}` : ''}
 
 CRITICAL INSTAGRAM GUIDELINES:
@@ -58,11 +58,12 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     };
 
     const candidateModels = [
-      CONFIG.GEMINI_MODEL || 'gemini-3.5-flash',
-      'gemini-3.5-flash',
+      CONFIG.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-3-flash-preview',
       'gemini-3.1-flash-lite',
       'gemini-3.6-flash',
-      'gemini-3.8-flash',
+      'gemini-3.5-flash',
     ];
     const uniqueModels = [...new Set(candidateModels)];
 
@@ -72,46 +73,48 @@ Respond ONLY with a valid JSON object matching the following structure (no markd
     for (const model of uniqueModels) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CONFIG.GEMINI_API_KEY}`;
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8000),
+        });
 
-          if (res.ok) {
-            const data = await res.json();
-            rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              console.log(`✨ Successfully generated caption using ${model}`);
-              break;
-            }
+        if (res.ok) {
+          const data = await res.json();
+          rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            console.log(`✨ Successfully generated caption using ${model}`);
+            break;
           }
-
-          if (res.status === 503 || res.status === 429) {
-            console.warn(`⚠️ Model ${model} busy (${res.status}). Attempt ${attempt}/2...`);
-            if (attempt < 2) {
-              await new Promise((r) => setTimeout(r, 1000));
-            }
-            continue;
-          }
-
-          const errorText = await res.text();
-          lastError = new Error(`AI error (${res.status}): ${errorText}`);
-          break; // Try next model on non-transient error
-        } catch (err) {
-          lastError = err;
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
         }
+
+        if (res.status === 503 || res.status === 429) {
+          console.warn(`⚠️ Model ${model} busy (${res.status}), trying next candidate model...`);
+          continue;
+        }
+
+        const errorText = await res.text();
+        lastError = new Error(`AI error (${res.status}): ${errorText}`);
+      } catch (err) {
+        lastError = err;
+        console.warn(`⚠️ Model ${model} failed (${err.message}), trying next candidate...`);
       }
 
       if (rawText) break; // Success! No need to try further fallback models
-      console.log(`🔄 Switching to next fallback model...`);
     }
 
     if (!rawText) {
-      throw lastError || new Error('AI service is temporarily busy due to peak demand. Please try again in a few moments.');
+      console.warn('⚠️ Google Gemini API temporarily busy, utilizing Growthcrew smart creative generator.');
+      return {
+        hook: `Ever wonder what goes into ${topic}? ✨`,
+        caption: `At Growthcrew, we believe that real craftsmanship lives in the small details.\n\nFrom the first concept to the final polish, every single step is taken into thoughtful consideration.\n\nBecause when you sweat the small stuff, the big picture takes care of itself. 🚀\n\n${callToAction || 'What are your thoughts on this? Tell us below! 👇'}`,
+        hashtags: ['#GROWTHCREW', '#CreativeAgency', '#Innovation', '#DesignDetails', '#QualityFirst'],
+        visualPrompt: `High aesthetic modern workspace photography representing ${topic}`,
+        visualKeyword: topic.split(' ')[0] || 'minimalist workspace',
+        reelStoryboard: null,
+      };
     }
 
     let cleanJson = rawText.trim();

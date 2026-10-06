@@ -10,9 +10,10 @@ const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const DEFAULT_DATA = {
   settings: {
     autoApprove: false,
+    isQueuePaused: false,
     defaultScheduleDelayHours: 2,
     preferredTone: 'Warm & Engaging',
-    instagramHandle: '@in2peta.official',
+    instagramHandle: '@growthcrew.official',
   },
   queue: [],
 };
@@ -98,7 +99,11 @@ export class QueueService {
       integrationId: postItem.integrationId,
       integrationName: postItem.integrationName || 'Instagram Account',
       platform: postItem.platform || 'instagram',
-      scheduledDate: postItem.scheduledDate || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      platforms: postItem.platforms || [postItem.platform || 'instagram'],
+      scheduledDate:
+        postItem.status === 'DRAFT' || postItem.status === 'IDEA'
+          ? postItem.scheduledDate || null
+          : postItem.scheduledDate || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       status: postItem.status || 'PENDING_REVIEW',
       postizPostId: postItem.postizPostId || null,
       postizMediaId: postItem.postizMediaId || null,
@@ -145,5 +150,60 @@ export class QueueService {
     data.queue = data.queue.filter((p) => p.id !== id);
     this.writeData(data);
     return true;
+  }
+
+  static getChannels() {
+    const data = this.readData();
+    if (!data.channels || data.channels.length === 0) {
+      // Re-link the user's connected Meta account (Mytestpage)
+      const defaultChannels = [
+        {
+          id: 'cmu2huh5o0001p0aq03ly15ud',
+          name: 'Mytestpage',
+          handle: '@mytestpage',
+          platform: 'instagram',
+          platforms: ['instagram', 'facebook'],
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          connected: true,
+          provider: 'Meta Graph API',
+        },
+      ];
+      data.channels = defaultChannels;
+      this.writeData(data);
+      return defaultChannels;
+    }
+    return data.channels;
+  }
+
+  static saveChannels(channels) {
+    const data = this.readData();
+    data.channels = channels;
+    this.writeData(data);
+    return data.channels;
+  }
+
+  static addChannel(channel) {
+    const data = this.readData();
+    if (!data.channels) data.channels = [];
+    const existingIndex = data.channels.findIndex(
+      (c) => c.id === channel.id || (c.name && c.name.toLowerCase() === (channel.name || '').toLowerCase())
+    );
+    const newCh = {
+      id: channel.id || 'cmu2huh5o0001p0aq03ly15ud',
+      name: channel.name || 'Mytestpage',
+      handle: channel.handle || `@${(channel.name || 'mytestpage').toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+      platform: channel.platform || 'instagram',
+      platforms: channel.platforms || ['instagram', 'facebook'],
+      avatar: channel.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      connected: true,
+      provider: 'Meta Graph API',
+    };
+    if (existingIndex >= 0) {
+      data.channels[existingIndex] = { ...data.channels[existingIndex], ...newCh, connected: true };
+    } else {
+      data.channels.push(newCh);
+    }
+    this.writeData(data);
+    return data.channels;
   }
 }

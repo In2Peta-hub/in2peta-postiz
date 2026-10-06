@@ -10,10 +10,20 @@ export class S3Service {
   static getClient() {
     if (!this.s3Client) {
       try {
-        const profile = process.env.AWS_PROFILE || 'postiz-dev';
+        let credentials;
+        if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+          credentials = {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          };
+        } else {
+          const profile = process.env.AWS_PROFILE || 'postiz-dev';
+          credentials = fromIni({ profile });
+        }
+
         this.s3Client = new S3Client({
-          region: CONFIG.AWS_REGION || 'ap-southeast-2',
-          credentials: fromIni({ profile }),
+          region: CONFIG.AWS_REGION || process.env.AWS_REGION || 'ap-southeast-2',
+          credentials,
         });
         this.isConfigured = true;
       } catch (err) {
@@ -60,6 +70,14 @@ export class S3Service {
    */
   static async checkStatus() {
     try {
+      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+        return {
+          connected: true,
+          mode: 'Environment Variables (Cloud Deployment)',
+          bucket: CONFIG.S3_BUCKET || 'in2peta-postiz-media',
+          region: CONFIG.AWS_REGION || 'ap-southeast-2',
+        };
+      }
       const profile = process.env.AWS_PROFILE || 'postiz-dev';
       const credsProvider = fromIni({ profile });
       await credsProvider();

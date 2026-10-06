@@ -28,6 +28,7 @@ import {
   Share2,
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
 const INSTA_GRADIENT = 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600';
 const IN2PETA_EXPLORE_URL = 'https://www.in2peta.com/explore';
 
@@ -119,11 +120,11 @@ export default function App() {
   const fetchData = async () => {
     try {
       const [settingsRes, channelsRes, queueRes, pubRes, healthRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch('/api/channels'),
-        fetch('/api/queue'),
-        fetch('/api/published'),
-        fetch('/api/health'),
+        fetch(`${API_BASE}/api/settings`),
+        fetch(`${API_BASE}/api/channels`),
+        fetch(`${API_BASE}/api/queue`),
+        fetch(`${API_BASE}/api/published`),
+        fetch(`${API_BASE}/api/health`),
       ]);
 
       if (settingsRes.ok) setSettings(await settingsRes.json());
@@ -150,7 +151,7 @@ export default function App() {
   const handleToggleAutoApprove = async () => {
     const nextVal = !settings.autoApprove;
     try {
-      const res = await fetch('/api/settings', {
+      const res = await fetch(`${API_BASE}/api/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ autoApprove: nextVal }),
@@ -190,7 +191,7 @@ export default function App() {
 
     setIsUploading(true);
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -250,7 +251,7 @@ export default function App() {
 
     setIsGenerating(true);
     try {
-      const res = await fetch('/api/generate', {
+      const res = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -293,7 +294,7 @@ export default function App() {
   const handleApprove = async (postId) => {
     setActionLoading(postId);
     try {
-      const res = await fetch(`/api/queue/${postId}/approve`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/queue/${postId}/approve`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Approval failed');
 
@@ -312,7 +313,7 @@ export default function App() {
   const handleReject = async (postId) => {
     setActionLoading(postId);
     try {
-      await fetch(`/api/queue/${postId}/reject`, {
+      await fetch(`${API_BASE}/api/queue/${postId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Archived by user' }),
@@ -330,7 +331,7 @@ export default function App() {
   const handleDelete = async (postId) => {
     if (!confirm('Remove this post from your queue?')) return;
     try {
-      await fetch(`/api/queue/${postId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/queue/${postId}`, { method: 'DELETE' });
       showToast('Post deleted', 'info');
       fetchData();
     } catch {
@@ -351,7 +352,7 @@ export default function App() {
         .filter(Boolean)
         .join('\n\n');
 
-      const res = await fetch(`/api/queue/${editingPost.id}`, {
+      const res = await fetch(`${API_BASE}/api/queue/${editingPost.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -432,13 +433,13 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-lg tracking-tight text-white">in2peta Social Studio</h1>
+                <h1 className="font-extrabold text-lg tracking-tight text-white">Growthcrew Social Studio</h1>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   Instagram Hub
                 </span>
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                <span>Media by <strong>in2peta</strong></span>
+                <span>Media by <strong>Growthcrew</strong></span>
                 <span>·</span>
                 <span>Smart AI Captions</span>
                 <span>·</span>
@@ -468,15 +469,15 @@ export default function App() {
               </div>
             )}
 
-            {/* Quick in2peta Explore Button */}
+            {/* Quick Growthcrew Explore Button */}
             <a
               href={IN2PETA_EXPLORE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-lime-500/20 to-emerald-500/20 hover:from-lime-500/30 hover:to-emerald-500/30 border border-lime-500/40 text-xs font-semibold text-lime-300 transition-all cursor-pointer shadow-sm"
-              title="Open in2peta AI image & video models"
+              title="Open Growthcrew AI image & video models"
             >
-              <span>Create on in2peta</span>
+              <span>Create on Growthcrew</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
 
@@ -614,8 +615,8 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Step 1 */}
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-lime-400">Step 1 · in2peta</span>
-                <h4 className="text-sm font-semibold text-white">Create Media on in2peta</h4>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-lime-400">Step 1 · Growthcrew</span>
+                <h4 className="text-sm font-semibold text-white">Create Media on Growthcrew</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Open <a href={IN2PETA_EXPLORE_URL} target="_blank" rel="noopener noreferrer" className="text-lime-300 underline font-medium">in2peta.com/explore</a> to generate an AI image or video, then attach it below.
                 </p>
@@ -645,9 +646,9 @@ export default function App() {
         {/* TAB 1: STUDIO (CREATE POST) */}
         {activeTab === 'studio' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left Column: STEP 1 (in2peta Media) + STEP 2 (AI Caption Studio) */}
+            {/* Left Column: STEP 1 (Growthcrew Media) + STEP 2 (AI Caption Studio) */}
             <div className="lg:col-span-7 space-y-6">
-              {/* STEP 1: in2peta Media Hub Card */}
+              {/* STEP 1: Growthcrew Media Hub Card */}
               <div className="bg-[#11131c] border border-lime-500/20 rounded-3xl p-6 shadow-xl space-y-5 relative overflow-hidden">
                 <div className="flex items-center justify-between border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2">
@@ -655,19 +656,19 @@ export default function App() {
                       1
                     </span>
                     <div>
-                      <h2 className="text-sm font-bold text-white">Attach Media from in2peta</h2>
-                      <p className="text-[11px] text-slate-400">AI Images & Videos generated on in2peta platform</p>
+                      <h2 className="text-sm font-bold text-white">Attach Media from Growthcrew</h2>
+                      <p className="text-[11px] text-slate-400">AI Images & Videos generated on Growthcrew platform</p>
                     </div>
                   </div>
 
-                  {/* Direct Gateway to in2peta.com */}
+                  {/* Direct Gateway to Growthcrew */}
                   <a
                     href={IN2PETA_EXPLORE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-lime-500/10 hover:bg-lime-500/20 text-lime-300 border border-lime-500/30 text-xs font-semibold transition-all cursor-pointer"
                   >
-                    <span>Open in2peta Explore</span>
+                    <span>Open Growthcrew Explore</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
@@ -683,7 +684,7 @@ export default function App() {
                         mediaSourceType === 'sample' ? 'bg-white/10 text-white shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      in2peta Samples
+                      Growthcrew Samples
                     </button>
                     <button
                       type="button"
@@ -714,7 +715,7 @@ export default function App() {
                   {mediaSourceType === 'sample' && (
                     <div className="space-y-2">
                       <span className="text-[11px] text-slate-400 block font-medium">
-                        Select a sample image from in2peta catalog:
+                        Select a sample image from Growthcrew catalog:
                       </span>
                       <div className="grid grid-cols-3 gap-3">
                         {SAMPLE_IN2PETA_MEDIA.map((item, i) => (
@@ -776,7 +777,7 @@ export default function App() {
                     <form onSubmit={handlePasteUrlSubmit} className="flex gap-2">
                       <input
                         type="url"
-                        placeholder="Paste in2peta image or video link (https://...)"
+                        placeholder="Paste Growthcrew image or video link (https://...)"
                         value={pastedUrlInput}
                         onChange={(e) => setPastedUrlInput(e.target.value)}
                         className="flex-1 bg-[#07080d] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-1 focus:ring-lime-400 focus:outline-none"
@@ -1058,7 +1059,7 @@ export default function App() {
                   ) : (
                     <img
                       src={attachedMediaUrl || SAMPLE_IN2PETA_MEDIA[0].url}
-                      alt="in2peta visual"
+                      alt="Growthcrew visual"
                       className="w-full h-full object-cover transition-all"
                     />
                   )}
@@ -1066,7 +1067,7 @@ export default function App() {
                   {/* Watermark badge */}
                   <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[10px] font-semibold text-white flex items-center gap-1 shadow-lg">
                     <Sparkles className="w-3 h-3 text-lime-400" />
-                    <span>in2peta Media</span>
+                    <span>Growthcrew Media</span>
                   </div>
                 </div>
 

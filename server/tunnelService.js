@@ -67,6 +67,14 @@ export class TunnelService {
    * Get the current live Cloudflare Quick Tunnel public URL
    */
   static async getTunnelUrl() {
+    // 0. If deployed on Render or cloud platform with public HTTPS URL, use it directly
+    if (process.env.PUBLIC_BACKEND_URL) {
+      return process.env.PUBLIC_BACKEND_URL.replace(/\/$/, '');
+    }
+    if (process.env.RENDER_EXTERNAL_URL) {
+      return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
+    }
+
     // 1. If child process is running and hostname is cached, return it
     if (this.childProcess && this.cachedHostname && Date.now() - this.lastChecked < 60000) {
       return `https://${this.cachedHostname}`;
@@ -75,8 +83,8 @@ export class TunnelService {
     // 2. If cloudflared binary exists and process isn't spawned yet, spawn it and listen to stderr
     if (fs.existsSync(CLOUDFLARED_PATH) && !this.childProcess) {
       try {
-        console.log('🚀 Starting Cloudflare Tunnel for Postiz media publishing...');
-        this.childProcess = spawn(CLOUDFLARED_PATH, ['tunnel', '--url', 'http://localhost:4007'], {
+        console.log('🚀 Starting Cloudflare Tunnel for Growthcrew API & Media publishing (port 3005)...');
+        this.childProcess = spawn(CLOUDFLARED_PATH, ['tunnel', '--url', 'http://localhost:3005'], {
           stdio: ['ignore', 'pipe', 'pipe'],
         });
 
@@ -93,6 +101,13 @@ export class TunnelService {
             this.lastChecked = Date.now();
             const fullUrl = `https://${this.cachedHostname}`;
             this.savePersistedUrl(fullUrl);
+
+            // Also sync to mobile app config
+            try {
+              const mobileCfg = path.join(PROJECT_ROOT, 'postiz-mobile', 'src', 'services', 'tunnelConfig.json');
+              fs.writeFileSync(mobileCfg, JSON.stringify({ tunnelUrl: fullUrl }, null, 2));
+            } catch {}
+
             console.log(`✅ Cloudflare Tunnel ready: ${fullUrl}`);
           }
         };
