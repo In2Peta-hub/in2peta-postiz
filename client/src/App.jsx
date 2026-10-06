@@ -1352,75 +1352,122 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         )}
 
         {/* TAB 3: PUBLISHED HISTORY */}
-        {activeTab === 'history' && (
-          <div className="space-y-6">
-            <div className="pb-2 border-b border-white/[0.06]">
-              <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-                Published History
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  {publishedPosts.length} Live
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400">All campaigns and posts published live via Postiz & Meta Graph API</p>
-            </div>
+        {activeTab === 'history' && (() => {
+          const allPublished = (publishedPosts && publishedPosts.length > 0)
+            ? publishedPosts
+            : (queueData.queue || []).filter((p) => p.status === 'PUBLISHED');
 
-            {publishedPosts.length === 0 ? (
-              <div className="scalora-card-glow rounded-3xl p-12 text-center space-y-3">
-                <CheckCircle2 className="w-8 h-8 text-slate-600 mx-auto" />
-                <h3 className="font-bold text-sm text-white">No Published Posts Yet</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Publish posts from the Studio or Queue to see live published releases here.
-                </p>
+          return (
+            <div className="space-y-6">
+              <div className="pb-2 border-b border-white/[0.06] flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
+                    Published History
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      {allPublished.length} Live
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400">All campaigns and posts broadcast live to Meta channels</p>
+                </div>
+                <a
+                  href="https://facebook.com/profile.php?id=61594485176950&sk=photos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-bold text-[#FFA84A] transition-all cursor-pointer"
+                >
+                  <FacebookIcon className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  <span>Open Facebook Photos</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {publishedPosts.map((post, idx) => (
-                  <div
-                    key={idx}
-                    className="scalora-card-glow rounded-3xl p-5 shadow-xl flex flex-col justify-between space-y-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          ✅ Published
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {new Date(post.publishDate || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
 
-                      {post.mediaUrl && (
-                        <div className="rounded-2xl overflow-hidden aspect-video bg-black/60">
-                          <img src={post.mediaUrl} alt="media" className="w-full h-full object-cover" />
-                        </div>
-                      )}
+              {allPublished.length === 0 ? (
+                <div className="scalora-card-glow rounded-3xl p-12 text-center space-y-3">
+                  <CheckCircle2 className="w-8 h-8 text-slate-600 mx-auto" />
+                  <h3 className="font-bold text-sm text-white">No Published Posts Yet</h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Publish posts from the Studio or Queue to see live published releases here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {allPublished.map((post, idx) => {
+                    const postImg = post.visualUrl || post.mediaUrl;
+                    const postText = post.fullPostText || post.caption || post.content || '';
+                    const postDate = post.publishedAt || post.publishDate || post.createdAt || Date.now();
 
+                    return (
                       <div
-                        className="text-xs text-slate-300 leading-relaxed line-clamp-4 whitespace-pre-line"
-                        dangerouslySetInnerHTML={{ __html: post.content || post.caption }}
-                      />
-                    </div>
+                        key={post.id || idx}
+                        className="scalora-card-glow rounded-3xl p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                              Published Live
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {new Date(postDate).toLocaleDateString([], {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                      <span className="text-[10px] text-slate-500 font-semibold">Meta Graph API</span>
-                      {post.releaseURL && (
-                        <a
-                          href={post.releaseURL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-bold text-[#FFA84A] border border-white/10 transition-all cursor-pointer"
-                        >
-                          <span>View Live Post</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                          {postImg && (
+                            <div className="rounded-2xl overflow-hidden aspect-video bg-black/60 border border-white/10 relative group">
+                              <img src={postImg} alt="media" className="w-full h-full object-cover" />
+                              <div className="absolute top-2 right-2 flex gap-1">
+                                {(post.platforms || ['facebook']).map((p, i) => (
+                                  <span key={i} className="p-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/15">
+                                    {p === 'facebook' ? (
+                                      <FacebookIcon className="w-3 h-3 text-[#38BDF8]" />
+                                    ) : (
+                                      <InstagramIcon className="w-3 h-3 text-[#FF5376]" />
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-1">
+                            {post.topic && (
+                              <h4 className="text-xs font-bold text-white line-clamp-1">{post.topic}</h4>
+                            )}
+                            <div
+                              className="text-xs text-slate-300 leading-relaxed line-clamp-4 whitespace-pre-line"
+                              dangerouslySetInnerHTML={{ __html: postText.replace(/\n/g, '<br/>') }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                          <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            Meta Graph API
+                          </span>
+                          <a
+                            href="https://facebook.com/profile.php?id=61594485176950&sk=photos"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-bold text-[#FFA84A] border border-white/10 transition-all cursor-pointer"
+                          >
+                            <span>View Live Photos</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </main>
 
       {/* Connect / Switch Channel Modal (Instagram & Facebook) */}
