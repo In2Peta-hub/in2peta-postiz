@@ -31,8 +31,13 @@ import {
   CloudUpload,
   Sliders,
   ChevronRight,
-  Compass
+  Compass,
+  LogOut,
+  User,
+  Facebook,
+  Instagram
 } from 'lucide-react';
+import LoginPage from './LoginPage';
 
 const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
 const SCALORA_GRADIENT = 'bg-gradient-to-r from-[#FF6B4A] to-[#FFA84A]';
@@ -68,15 +73,59 @@ const SAMPLE_IN2PETA_MEDIA = [
 ];
 
 export default function App({ defaultTab = 'studio', apiUrl } = {}) {
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('growthcrew_auth');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    localStorage.setItem('growthcrew_auth', JSON.stringify(user));
+    showToast(`Welcome back, ${user.name}!`, 'success');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('growthcrew_auth');
+    showToast('Signed out successfully.', 'info');
+  };
+
   // Navigation
   const [activeTab, setActiveTab] = useState(defaultTab); // 'studio' | 'queue' | 'history'
   const [showBeginnerGuide, setShowBeginnerGuide] = useState(true);
 
   // Channels & Account
-  const [channels, setChannels] = useState([]);
-  const [activeChannel, setActiveChannel] = useState(null);
+  const [channels, setChannels] = useState([
+    {
+      id: 'cmu2huh5o0001p0aq03ly15ud',
+      name: 'Mytestpage (Instagram)',
+      handle: '@mytestpage',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      connected: true,
+      provider: 'Meta Graph API',
+    },
+    {
+      id: 'cmu2huh5o0002p0aq03lyfb01',
+      name: 'Mytestpage (Facebook Page)',
+      handle: '@mytestpage.fb',
+      platform: 'facebook',
+      platforms: ['facebook'],
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      connected: true,
+      provider: 'Meta Graph API',
+    },
+  ]);
+  const [activeChannel, setActiveChannel] = useState(channels[0]);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [customHandleInput, setCustomHandleInput] = useState('');
+  const [customPlatform, setCustomPlatform] = useState('instagram');
 
   // Settings & Queue
   const [settings, setSettings] = useState({ autoApprove: false });
@@ -107,8 +156,9 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
   const [editCaption, setEditCaption] = useState('');
   const [editHashtags, setEditHashtags] = useState('');
 
-  // Aspect ratio
+  // Aspect ratio & Target Platform
   const [aspectRatio, setAspectRatio] = useState('portrait'); // 'square' | 'portrait' | 'reel'
+  const [selectedPlatforms, setSelectedPlatforms] = useState(['instagram', 'facebook']);
   const [expandedCaption, setExpandedCaption] = useState(false);
 
   // Queue & Modals
@@ -137,14 +187,16 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       if (settingsRes.ok) setSettings(await settingsRes.json());
       if (channelsRes.ok) {
         const ch = await channelsRes.json();
-        setChannels(ch);
-        if (ch.length > 0 && !activeChannel) setActiveChannel(ch[0]);
+        if (Array.isArray(ch) && ch.length > 0) {
+          setChannels(ch);
+          if (!activeChannel) setActiveChannel(ch[0]);
+        }
       }
       if (queueRes.ok) setQueueData(await queueRes.json());
       if (pubRes.ok) setPublishedPosts(await pubRes.json());
       if (healthRes.ok) setHealthInfo(await healthRes.json());
     } catch {
-      // Standalone mode silent handling
+      // Standalone mode
     }
   };
 
@@ -159,11 +211,13 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     e.preventDefault();
     if (!customHandleInput.trim()) return;
     const formatted = customHandleInput.trim().replace(/^@/, '');
+    const isFb = customPlatform === 'facebook';
     const newChan = {
       id: `custom_${Date.now()}`,
-      name: formatted,
-      handle: `@${formatted}`,
-      platform: 'instagram',
+      name: `Mytestpage (${isFb ? 'Facebook Page' : 'Instagram'})`,
+      handle: isFb ? `@${formatted}.fb` : `@${formatted}`,
+      platform: customPlatform,
+      platforms: [customPlatform],
       avatar: attachedMediaUrl || SAMPLE_IN2PETA_MEDIA[0].url,
       connected: true,
       provider: 'Meta Graph API',
@@ -174,15 +228,17 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newChan),
       });
+      setChannels((prev) => [...prev.filter((c) => c.id !== newChan.id), newChan]);
       setActiveChannel(newChan);
       setShowConnectModal(false);
       setCustomHandleInput('');
       fetchData();
-      showToast(`Connected @${formatted} successfully!`, 'success');
+      showToast(`Connected ${newChan.name} successfully!`, 'success');
     } catch {
+      setChannels((prev) => [...prev, newChan]);
       setActiveChannel(newChan);
       setShowConnectModal(false);
-      showToast(`Connected @${formatted} (Local Mode)!`, 'success');
+      showToast(`Connected ${newChan.name} (Local Mode)!`, 'success');
     }
   };
 
@@ -286,6 +342,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
           mediaId: attachedMediaId,
           postizMediaId: attachedMediaId,
           mediaType: attachedMediaType,
+          platforms: selectedPlatforms,
           scheduledDate: new Date(scheduledDate).toISOString(),
           integrationId: activeChannel?.id,
         }),
@@ -303,7 +360,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       fetchData();
 
       if (settings.autoApprove) {
-        showToast('🚀 Post generated & INSTANTLY published to Instagram via Postiz!', 'success');
+        showToast('🚀 Post generated & INSTANTLY published to Meta channels!', 'success');
         setActiveTab('history');
       } else {
         showToast('✨ High-converting caption generated! Review below or schedule.', 'success');
@@ -338,9 +395,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
           hashtags: editHashtags.split(' ').filter(Boolean),
           mediaUrl: attachedMediaUrl,
           mediaType: attachedMediaType,
+          platforms: selectedPlatforms,
           scheduledDate: new Date(scheduledDate).toISOString(),
           status: 'SCHEDULED',
-          channelName: activeChannel?.name || 'Growthcrew',
+          channelName: activeChannel?.name || 'Mytestpage',
           integrationId: activeChannel?.id,
         }),
       });
@@ -364,7 +422,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       const res = await fetch(`${API_BASE}/api/queue/${postId}/publish-now`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
-      showToast('🚀 Successfully published to Instagram / Facebook!', 'success');
+      showToast('🚀 Successfully published to Instagram & Facebook!', 'success');
       fetchData();
       setActiveTab('history');
     } catch (err) {
@@ -417,6 +475,11 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     }
   };
 
+  // If user is not authenticated, render Login Page
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   const queueList = queueData.queue || [];
   const pendingCount = queueList.filter((p) => p.status === 'PENDING_REVIEW').length;
   const filteredQueue =
@@ -448,10 +511,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         </div>
       )}
 
-      {/* Scalora-Themed Header */}
+      {/* Clean Scalora-Themed Header (Cleaned Subtitle & Badge removed) */}
       <header className="border-b border-white/[0.07] bg-[#07080a]/85 backdrop-blur-2xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          {/* Logo & Platform Roles */}
+          {/* Logo & Clean Platform Title */}
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-lg shadow-[#FF6B4A]/25">
               <div className="w-full h-full bg-[#0a0c10] rounded-[14px] flex items-center justify-center">
@@ -467,31 +530,11 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   AI Social Engine
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                <span>Direct <strong>AWS S3</strong> Media</span>
-                <span className="text-slate-600">·</span>
-                <span><strong>Gemini</strong> AI Captions</span>
-                <span className="text-slate-600">·</span>
-                <span><strong>Postiz</strong> Publisher</span>
-              </p>
             </div>
           </div>
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-3">
-            {/* S3 Storage Status Badge */}
-            <div
-              className={`hidden md:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                healthInfo?.s3Storage?.connected !== false
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/25'
-              }`}
-              title="AWS S3 Bucket: in2peta-postiz-media (Direct Cloud Uploads Active)"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-semibold">AWS S3 Active</span>
-            </div>
-
             {/* Quick Growthcrew AI Platform Explore Link */}
             <a
               href={IN2PETA_EXPLORE_URL}
@@ -504,11 +547,11 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </a>
 
-            {/* Connected Channel Profile Pill */}
+            {/* Connected Channel Switcher Profile Pill (Instagram & Facebook) */}
             <div
               onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer group"
-              title="Click to connect or switch Instagram account"
+              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer group"
+              title="Click to switch between Instagram and Facebook Page"
             >
               <div className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] to-[#FF5376] shrink-0">
                 <img
@@ -519,10 +562,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold text-white group-hover:text-[#FFA84A] transition-colors flex items-center gap-1">
-                  {activeChannel?.handle || '@growthcrew.official'}
+                  {activeChannel?.handle || '@mytestpage'}
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                 </span>
-                <span className="text-[10px] text-slate-400 capitalize">{activeChannel?.platform || 'Instagram'} Connected</span>
+                <span className="text-[10px] text-slate-400 capitalize">{activeChannel?.platform || 'Meta'} Connected</span>
               </div>
             </div>
 
@@ -550,6 +593,16 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                 </span>
               </button>
             </div>
+
+            {/* Sign Out Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-2 rounded-full bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition-all cursor-pointer ml-1"
+              title="Sign Out of Growthcrew Studio"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </header>
@@ -660,9 +713,9 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               {/* Step 3 */}
               <div className="p-4 rounded-2xl bg-[#090b10]/60 border border-white/[0.06] space-y-1.5">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFA84A]">Step 3 · Postiz Meta</span>
-                <h4 className="text-sm font-bold text-white">Preview & Schedule</h4>
+                <h4 className="text-sm font-bold text-white">Publish to Instagram & Facebook</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Simulate live Instagram appearance and schedule or instantly broadcast to your connected page.
+                  Simulate live Meta posts and schedule or instantly broadcast to your connected pages.
                 </p>
               </div>
             </div>
@@ -841,6 +894,40 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   />
                 </div>
 
+                {/* Target Channels Toggle */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">Target Publishing Channels:</label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 cursor-pointer text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selectedPlatforms.includes('instagram')}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedPlatforms([...selectedPlatforms, 'instagram']);
+                          else setSelectedPlatforms(selectedPlatforms.filter((p) => p !== 'instagram'));
+                        }}
+                        className="rounded text-[#FF6B4A]"
+                      />
+                      <Instagram className="w-3.5 h-3.5 text-[#FF5376]" />
+                      <span>Instagram</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 cursor-pointer text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selectedPlatforms.includes('facebook')}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedPlatforms([...selectedPlatforms, 'facebook']);
+                          else setSelectedPlatforms(selectedPlatforms.filter((p) => p !== 'facebook'));
+                        }}
+                        className="rounded text-[#38BDF8]"
+                      />
+                      <Facebook className="w-3.5 h-3.5 text-[#38BDF8]" />
+                      <span>Facebook Page</span>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Tone & CTA Options */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -891,7 +978,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               </div>
             </div>
 
-            {/* Right Column: Live Instagram Simulator & Publishing Controls */}
+            {/* Right Column: Live Instagram / Facebook Simulator & Publishing Controls */}
             <div className="lg:col-span-5 space-y-6">
               {/* Instagram iPhone Simulator Card */}
               <div className="scalora-card-glow rounded-3xl p-6 shadow-2xl space-y-5">
@@ -900,7 +987,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                     <span className="w-6 h-6 rounded-lg bg-[#FFA84A]/20 text-[#FFA84A] flex items-center justify-center font-extrabold text-xs border border-[#FFA84A]/30">
                       3
                     </span>
-                    <h3 className="text-sm font-extrabold text-white">Live Instagram Simulator</h3>
+                    <h3 className="text-sm font-extrabold text-white">Live Meta Post Simulator</h3>
                   </div>
 
                   {/* Aspect Ratio Selector */}
@@ -946,10 +1033,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       </div>
                       <div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-bold text-white">{activeChannel?.name || 'Growthcrew Official'}</span>
+                          <span className="text-xs font-bold text-white">{activeChannel?.name || 'Mytestpage'}</span>
                           <CheckCircle2 className="w-3 h-3 text-[#38BDF8] fill-[#38BDF8]/20" />
                         </div>
-                        <span className="text-[10px] text-slate-400">{activeChannel?.handle || '@growthcrew.official'}</span>
+                        <span className="text-[10px] text-slate-400">{activeChannel?.handle || '@mytestpage'}</span>
                       </div>
                     </div>
                     <MoreHorizontal className="w-4 h-4 text-slate-400" />
@@ -1269,7 +1356,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-bold text-[#FFA84A] border border-white/10 transition-all cursor-pointer"
                         >
-                          <span>View on Instagram</span>
+                          <span>View Live Post</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
@@ -1282,7 +1369,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         )}
       </main>
 
-      {/* Connect Instagram Modal */}
+      {/* Connect / Switch Channel Modal (Instagram & Facebook) */}
       {showConnectModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0e1118] border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
@@ -1293,7 +1380,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                     <Sparkles className="w-4 h-4 text-[#FFA84A]" />
                   </div>
                 </div>
-                <h3 className="font-extrabold text-sm text-white">Connect Instagram Handle</h3>
+                <h3 className="font-extrabold text-sm text-white">Select Connected Channel</h3>
               </div>
               <button
                 type="button"
@@ -1304,28 +1391,70 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Connect your brand handle to simulate live publishing workflows and schedule multi-channel posts.
-            </p>
+            {/* Available Channels List */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 block">Available Connected Channels:</label>
+              <div className="space-y-2">
+                {channels.map((chan) => (
+                  <div
+                    key={chan.id}
+                    onClick={() => {
+                      setActiveChannel(chan);
+                      setShowConnectModal(false);
+                      showToast(`Active channel set to ${chan.name}!`, 'success');
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
+                      activeChannel?.id === chan.id
+                        ? 'bg-[#FF6B4A]/15 border-[#FF6B4A]/50 shadow-md shadow-[#FF6B4A]/10'
+                        : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] to-[#FF5376]">
+                        <img src={chan.avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">{chan.name}</span>
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                          {chan.platform === 'facebook' ? (
+                            <Facebook className="w-3 h-3 text-[#38BDF8]" />
+                          ) : (
+                            <Instagram className="w-3 h-3 text-[#FF5376]" />
+                          )}
+                          <span>{chan.handle}</span>
+                        </span>
+                      </div>
+                    </div>
+                    {activeChannel?.id === chan.id && (
+                      <CheckCircle2 className="w-4 h-4 text-[#FFA84A]" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            <form onSubmit={handleConnectInstagram} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1.5">Instagram Handle</label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-500 text-sm">@</span>
+            {/* Add Custom Handle */}
+            <form onSubmit={handleConnectInstagram} className="space-y-3 pt-2 border-t border-white/[0.06]">
+              <label className="text-xs font-bold text-slate-300 block">Add New Channel / Page:</label>
+              <div className="flex gap-2">
+                <select
+                  value={customPlatform}
+                  onChange={(e) => setCustomPlatform(e.target.value)}
+                  className="bg-[#07080b] border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B4A]/60"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook Page</option>
+                </select>
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-2 text-slate-500 text-xs">@</span>
                   <input
                     type="text"
-                    placeholder="growthcrew.official"
+                    placeholder="handle_or_page"
                     value={customHandleInput}
                     onChange={(e) => setCustomHandleInput(e.target.value)}
-                    className="w-full bg-[#07080b] border border-white/10 rounded-xl pl-8 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B4A]/60"
+                    className="w-full bg-[#07080b] border border-white/10 rounded-xl pl-7 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF6B4A]/60"
                   />
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 text-xs text-slate-400 space-y-1">
-                <div className="font-semibold text-slate-200">Active Meta Connection:</div>
-                <p>Currently linked with page: <strong>{activeChannel?.name || 'Growthcrew Official'}</strong></p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
