@@ -36,13 +36,13 @@ class PostizService:
             )
             if res.status_code == 200:
                 if is_postiz_offline:
-                    print("✅ Postiz service reconnected on port 4007")
+                    print("[INFO] Postiz service reconnected on port 4007")
                     is_postiz_offline = False
                 return res.json()
         except Exception:
             last_postiz_check_time = time.time()
             if not is_postiz_offline:
-                print("ℹ️ Postiz service (port 4007) is offline. Operating in standalone studio mode.")
+                print("[INFO] Postiz service (port 4007) is offline. Operating in standalone studio mode.")
                 is_postiz_offline = True
         return []
 
