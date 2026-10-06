@@ -430,11 +430,52 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
 
   // Instant Publish Action
   const handleInstantPublish = async (postId) => {
-    setActionLoading(`pub_${postId}`);
+    setActionLoading(`pub_${postId || 'direct'}`);
+    const finalCaption = `${editHook}\n\n${editCaption}\n\n${editHashtags}`.trim();
+    const activeDraftId = (postId && postId !== 'new') ? postId : (generatedDraft?.post?.id || null);
+
     try {
-      const res = await fetch(`${API_BASE}/api/queue/${postId}/publish-now`, { method: 'POST' });
+      let res;
+      if (activeDraftId) {
+        if (finalCaption) {
+          await fetch(`${API_BASE}/api/queue/${activeDraftId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              hook: editHook,
+              caption: editCaption,
+              hashtags: editHashtags.split(' ').filter(Boolean),
+              visualUrl: attachedMediaUrl,
+              mediaUrl: attachedMediaUrl,
+              platforms: selectedPlatforms,
+              integrationId: activeChannel?.id,
+            }),
+          }).catch(() => {});
+        }
+        res = await fetch(`${API_BASE}/api/queue/${activeDraftId}/publish-now`, { method: 'POST' });
+      } else {
+        res = await fetch(`${API_BASE}/api/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: topic || 'Direct Studio Post',
+            hook: editHook,
+            caption: editCaption,
+            hashtags: editHashtags.split(' ').filter(Boolean),
+            fullPostText: finalCaption || 'Growthcrew Social Post',
+            mediaUrl: attachedMediaUrl,
+            visualUrl: attachedMediaUrl,
+            mediaType: attachedMediaType,
+            platforms: selectedPlatforms,
+            channelName: activeChannel?.name || 'Mytestpage',
+            integrationId: activeChannel?.id,
+            status: 'PUBLISHED',
+          }),
+        });
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Publish failed');
+      if (!res.ok) throw new Error(data.detail || data.error || 'Publish failed');
       showToast('🚀 Successfully published to Instagram & Facebook!', 'success');
       fetchData();
       setActiveTab('history');
