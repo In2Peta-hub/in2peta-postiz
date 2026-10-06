@@ -1,0 +1,13 @@
+{
+  "source": "https://scalora.framer.website/marketing",
+  "platform": "framer",
+  "captureMode": "html-with-runtime",
+  "generatedAt": "2026-10-06T10:47:41.137Z",
+  "assets": 472,
+  "failedAssets": [],
+  "subpages": 21,
+  "visualValidation": "not-run",
+  "limitations": [
+    "Server-side accounts, payments, search and form processing are not exported."
+  ]
+}

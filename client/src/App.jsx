@@ -60,9 +60,11 @@ const SAMPLE_IN2PETA_MEDIA = [
   },
 ];
 
-export default function App() {
+import ScaloraWebsite from './ScaloraWebsite';
+
+export default function App({ defaultTab = 'website', apiUrl } = {}) {
   // Navigation
-  const [activeTab, setActiveTab] = useState('studio'); // 'studio' | 'queue' | 'history'
+  const [activeTab, setActiveTab] = useState(defaultTab); // 'website' | 'studio' | 'queue' | 'history'
   const [showBeginnerGuide, setShowBeginnerGuide] = useState(true);
 
   // Channels & Account
@@ -536,6 +538,21 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex space-x-2 sm:space-x-4">
             <button
+              onClick={() => setActiveTab('website')}
+              className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+                activeTab === 'website'
+                  ? 'border-rose-500 text-rose-400 bg-rose-500/5 font-bold'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Globe className="w-4 h-4 text-amber-400" />
+              <span>Scalora Website</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                Template
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('studio')}
               className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
                 activeTab === 'studio'
@@ -572,7 +589,7 @@ export default function App() {
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Globe className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
               <span>Published on Instagram</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400">
                 {publishedPosts.length}
@@ -591,7 +608,13 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Workspace */}
+      {/* VIEW 1: SCALORA MARKETING & PLATFORM WEBSITE */}
+      {activeTab === 'website' && (
+        <ScaloraWebsite onLaunchStudio={() => setActiveTab('studio')} />
+      )}
+
+      {/* Main Workspace for Studio / Queue / History */}
+      {activeTab !== 'website' && (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
         {/* Beginner Step Cards */}
         {showBeginnerGuide && (
@@ -1452,6 +1475,7 @@ export default function App() {
           </div>
         )}
       </main>
+      )}
 
       {/* Connect Instagram Modal */}
       {showConnectModal && (
