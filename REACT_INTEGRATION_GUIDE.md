@@ -1,56 +1,59 @@
-# 💻 React Frontend Integration Guide (for Ruchir's Website)
+# React client — PostPulse Studio
 
-This guide shows how to embed the **Growthcrew Social Studio** web application into any existing React project.
+Embed or run the Vite React app that hosts **PostPulse Studio** (social) and **GrowthCrew Outreach** (header mode toggle).
 
----
-
-## 📦 1. Dependencies
-
-In your React project root, ensure you have `lucide-react` and `tailwindcss` installed:
+## Dependencies
 
 ```bash
-npm install lucide-react
+cd client
+bun install
 ```
 
----
+Main UI libs: React, Tailwind, `lucide-react`.
 
-## 🎨 2. Component Integration
+## Run standalone
 
-Copy the `admin-approval-portal/client/src/App.jsx` (or `GrowthcrewStudio.jsx`) into your components folder and import it directly into your React Router or page:
-
-```jsx
-import React from 'react';
-import { GrowthcrewStudio } from './components/GrowthcrewStudio';
-
-export function SocialStudioPage() {
-  return (
-    <div className="w-full min-h-screen">
-      <GrowthcrewStudio />
-    </div>
-  );
-}
+```bash
+cd client
+bun install
+bun run dev
 ```
 
----
+Open http://localhost:5173  
 
-## ⚙️ 3. Configuring Backend API Endpoint
-
-By default, the client makes relative requests to `/api/*` (ideal if running behind Vite proxy or Next.js rewrites).
-
-If your FastAPI backend is running on a different port (e.g. `http://localhost:3005` or a deployed URL like `https://api.yourdomain.com`), set it in your `.env`:
+Point the client at FastAPI:
 
 ```env
+# client/.env
 VITE_API_URL=http://localhost:3005
 ```
 
----
+Without `VITE_API_URL`, requests use relative `/api/*` (fine behind a proxy).
 
-## 🚀 4. Running the Standalone React Web Client
+## Embed in another React app
 
-```bash
-cd admin-approval-portal/client
-npm install
-npm run dev
+Primary entry is `client/src/App.jsx` (login + PostPulse / GrowthCrew modes). GrowthCrew UI lives in `OutreachPanel.jsx`.
+
+```jsx
+import App from './App';
+
+export function StudioPage() {
+  return <App />;
+}
 ```
 
-Open [`http://localhost:5173`](http://localhost:5173) in your browser.
+Optional: `defaultTab="studio" | "queue" | "history" | "outreach"` — `"outreach"` opens GrowthCrew mode.
+
+## Product modes (UI)
+
+- **PostPulse** — Studio / Review & queue / Published  
+- **GrowthCrew** — email outreach (`/api/growthcrew/*`)  
+
+Do not brand the whole host app as Growthcrew unless you intend only the outreach mode.
+
+## Build
+
+```bash
+cd client
+bun run build
+```

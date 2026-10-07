@@ -33,9 +33,11 @@ import {
   ChevronRight,
   Compass,
   LogOut,
-  User
+  User,
+  Mail
 } from 'lucide-react';
 import LoginPage from './LoginPage';
+import OutreachPanel from './OutreachPanel';
 
 // Custom SVG Icons for Meta Social Channels
 const InstagramIcon = ({ className = 'w-4 h-4' }) => (
@@ -108,9 +110,18 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     showToast('Signed out successfully.', 'info');
   };
 
-  // Navigation
-  const [activeTab, setActiveTab] = useState(defaultTab); // 'studio' | 'queue' | 'history'
+  // Product mode: Social Studio (PostPulse) vs GrowthCrew Outreach
+  const [productMode, setProductMode] = useState(defaultTab === 'outreach' ? 'growthcrew' : 'social');
+  const [activeTab, setActiveTab] = useState(defaultTab === 'outreach' ? 'studio' : defaultTab); // 'studio' | 'queue' | 'history'
   const [showBeginnerGuide, setShowBeginnerGuide] = useState(true);
+  const isGrowthcrew = productMode === 'growthcrew';
+
+  const switchProductMode = (mode) => {
+    setProductMode(mode);
+    if (mode === 'social' && activeTab === 'outreach') {
+      setActiveTab('studio');
+    }
+  };
 
   // Channels & Account
   const [channels, setChannels] = useState([
@@ -251,7 +262,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       setChannels((prev) => [...prev, newChan]);
       setActiveChannel(newChan);
       setShowConnectModal(false);
-      showToast(`Connected ${newChan.name} (Local Mode)!`, 'success');
+      showToast(`Connected ${newChan.name}.`, 'success');
     }
   };
 
@@ -265,12 +276,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ autoApprove: newVal }),
       });
-      showToast(
-        newVal
-          ? '⚡ Auto-Publish ENABLED: Posts publish instantly upon generation.'
-          : '🛡️ Review Mode ENABLED: Posts will wait in queue for your approval.',
-        'info'
-      );
+      showToast(newVal ? 'Auto-publish on.' : 'Review before publish.', 'info');
     } catch {
       showToast('Settings updated.', 'info');
     }
@@ -300,7 +306,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       if (res.ok && data.url) {
         setAttachedMediaUrl(data.url);
         setAttachedMediaId(data.postizMediaId || null);
-        showToast(`☁️ Uploaded to AWS S3: ${isVideo ? 'Video' : 'Image'} ready!`, 'success');
+        showToast(`${isVideo ? 'Video' : 'Image'} uploaded.`, 'success');
       } else {
         showToast(data.error || 'Upload failed. Using local preview.', 'error');
       }
@@ -326,7 +332,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     setAttachedMediaId(null);
     setAttachedMediaType(isVideo ? 'video' : 'image');
     setMediaSourceType('url');
-    showToast('Media URL linked to Instagram preview!', 'success');
+    showToast('Media attached.', 'success');
   };
 
   // Generate Post Caption with Gemini AI
@@ -338,7 +344,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     }
 
     if (isUploading) {
-      showToast('Please wait, media is currently uploading to AWS S3...', 'info');
+      showToast('Media is still uploading…', 'info');
       return;
     }
 
@@ -373,10 +379,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       fetchData();
 
       if (settings.autoApprove) {
-        showToast('🚀 Post generated & INSTANTLY published to Meta channels!', 'success');
+        showToast('Published.', 'success');
         setActiveTab('history');
       } else {
-        showToast('✨ High-converting caption generated! Review below or schedule.', 'success');
+        showToast('Caption ready.', 'success');
       }
     } catch (err) {
       showToast(`Notice: ${err.message || 'Error occurred.'}`, 'error');
@@ -462,7 +468,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
             hook: editHook,
             caption: editCaption,
             hashtags: editHashtags.split(' ').filter(Boolean),
-            fullPostText: finalCaption || 'Growthcrew Social Post',
+            fullPostText: finalCaption || 'PostPulse social post',
             mediaUrl: attachedMediaUrl,
             visualUrl: attachedMediaUrl,
             mediaType: attachedMediaType,
@@ -476,7 +482,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.error || 'Publish failed');
-      showToast('🚀 Successfully published to Instagram & Facebook!', 'success');
+      showToast('Published.', 'success');
       fetchData();
       setActiveTab('history');
     } catch (err) {
@@ -491,7 +497,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     setActionLoading(`approve_${postId}`);
     try {
       await fetch(`${API_BASE}/api/queue/${postId}/approve`, { method: 'POST' });
-      showToast('✅ Post approved for automated publishing.', 'success');
+      showToast('Approved.', 'success');
       fetchData();
     } catch {
       showToast('Status updated.', 'info');
@@ -565,95 +571,137 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         </div>
       )}
 
-      {/* Clean Scalora-Themed Header (Cleaned Subtitle & Badge removed) */}
       <header className="border-b border-white/[0.07] bg-[#07080a]/85 backdrop-blur-2xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          {/* Logo & Clean Platform Title */}
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-lg shadow-[#FF6B4A]/25">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-lg shadow-[#FF6B4A]/25 shrink-0">
               <div className="w-full h-full bg-[#0a0c10] rounded-[14px] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[#FFA84A]" />
+                {isGrowthcrew ? (
+                  <Mail className="w-5 h-5 text-[#FFA84A]" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-[#FFA84A]" />
+                )}
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-                  Growthcrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Studio</span>
-                </h1>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#FF6B4A]/15 text-[#FFA84A] border border-[#FF6B4A]/30">
-                  AI Social Engine
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Header Controls */}
-          <div className="flex items-center gap-3">
-            {/* Quick Growthcrew AI Platform Explore Link */}
-            <a
-              href={IN2PETA_EXPLORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Open Growthcrew AI image & video generation models"
-            >
-              <span>Explore AI Models</span>
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            </a>
-
-            {/* Connected Channel Switcher Profile Pill (Instagram & Facebook) */}
-            <div
-              onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer group"
-              title="Click to switch between Instagram and Facebook Page"
-            >
-              <div className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] to-[#FF5376] shrink-0">
-                <img
-                  src={activeChannel?.avatar || SAMPLE_IN2PETA_MEDIA[0].url}
-                  alt="avatar"
-                  className="w-full h-full rounded-full object-cover bg-slate-800"
-                />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-semibold text-white group-hover:text-[#FFA84A] transition-colors flex items-center gap-1">
-                  {activeChannel?.handle || '@mytestpage'}
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                </span>
-                <span className="text-[10px] text-slate-400 capitalize">{activeChannel?.platform || 'Meta'} Connected</span>
-              </div>
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 truncate">
+                {isGrowthcrew ? (
+                  <>
+                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Outreach</span>
+                  </>
+                ) : (
+                  <>
+                    PostPulse <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Studio</span>
+                  </>
+                )}
+              </h1>
             </div>
 
-            {/* Auto-Publish Instant Mode Toggle */}
-            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/10">
-              <div className="text-right">
-                <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 block">Auto-Publish</span>
-                <span className={`text-[11px] font-extrabold ${settings.autoApprove ? 'text-emerald-400' : 'text-[#FFA84A]'}`}>
-                  {settings.autoApprove ? 'Instant' : 'Review First'}
-                </span>
-              </div>
+            <div className="flex items-center gap-2 ml-1 pl-3 border-l border-white/10 shrink-0">
+              <span
+                className={`text-[11px] font-bold transition-colors ${
+                  !isGrowthcrew ? 'text-white' : 'text-slate-500'
+                }`}
+              >
+                PostPulse
+              </span>
               <button
                 type="button"
-                onClick={handleToggleAutoApprove}
-                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  settings.autoApprove ? 'bg-emerald-500' : 'bg-slate-800 border border-white/10'
+                role="switch"
+                aria-checked={isGrowthcrew}
+                aria-label={
+                  isGrowthcrew
+                    ? 'Mode: GrowthCrew. Switch to PostPulse.'
+                    : 'Mode: PostPulse. Switch to GrowthCrew.'
+                }
+                onClick={() => switchProductMode(isGrowthcrew ? 'social' : 'growthcrew')}
+                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA84A]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07080a] ${
+                  isGrowthcrew ? 'bg-emerald-500' : 'bg-slate-800 border border-white/10'
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center text-slate-900 ${
-                    settings.autoApprove ? 'translate-x-5' : 'translate-x-0'
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    isGrowthcrew ? 'translate-x-5' : 'translate-x-0'
                   }`}
-                >
-                  <Zap className="w-3 h-3 text-[#FF6B4A]" />
-                </span>
+                />
               </button>
+              <span
+                className={`text-[11px] font-bold transition-colors ${
+                  isGrowthcrew ? 'text-white' : 'text-slate-500'
+                }`}
+              >
+                GrowthCrew
+              </span>
             </div>
+          </div>
 
-            {/* Sign Out Button */}
+          <div className="flex items-center gap-3 shrink-0">
+            {!isGrowthcrew && (
+              <>
+                <a
+                  href={IN2PETA_EXPLORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
+                  title="Browse image and video models"
+                >
+                  <span>Explore models</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+
+                <div
+                  onClick={() => setShowConnectModal(true)}
+                  className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer group"
+                  title="Switch channel"
+                >
+                  <div className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] to-[#FF5376] shrink-0">
+                    <img
+                      src={activeChannel?.avatar || SAMPLE_IN2PETA_MEDIA[0].url}
+                      alt="avatar"
+                      className="w-full h-full rounded-full object-cover bg-slate-800"
+                    />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs font-semibold text-white group-hover:text-[#FFA84A] transition-colors flex items-center gap-1">
+                      {activeChannel?.handle || '@mytestpage'}
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                    </span>
+                    <span className="text-[10px] text-slate-400 capitalize">{activeChannel?.platform || 'Meta'} Connected</span>
+                  </div>
+                </div>
+
+                <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/10">
+                  <div className="text-right">
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 block">Auto-Publish</span>
+                    <span className={`text-[11px] font-extrabold ${settings.autoApprove ? 'text-emerald-400' : 'text-[#FFA84A]'}`}>
+                      {settings.autoApprove ? 'Instant' : 'Review First'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleAutoApprove}
+                    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      settings.autoApprove ? 'bg-emerald-500' : 'bg-slate-800 border border-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center text-slate-900 ${
+                        settings.autoApprove ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    >
+                      <Zap className="w-3 h-3 text-[#FF6B4A]" />
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+
             <button
               type="button"
               onClick={handleLogout}
               className="p-2 rounded-full bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition-all cursor-pointer ml-1"
-              title="Sign Out of Growthcrew Studio"
+              title="Sign out"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -661,71 +709,74 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         </div>
       </header>
 
-      {/* Segmented Tab Navigation */}
-      <nav className="border-b border-white/[0.06] bg-[#07080a]/90 backdrop-blur-2xl px-4 sm:px-8 sticky top-18 z-30">
-        <div className="max-w-7xl mx-auto flex items-center justify-between py-2">
-          {/* Segmented Pill Container */}
-          <div className="flex items-center gap-1.5 bg-[#0d0f15] p-1 rounded-2xl border border-white/[0.07]">
-            <button
-              onClick={() => setActiveTab('studio')}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'studio'
-                  ? 'scalora-pill-tab-active'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Studio (Create Post)</span>
-            </button>
+      {!isGrowthcrew && (
+        <nav className="border-b border-white/[0.06] bg-[#07080a]/90 backdrop-blur-2xl px-4 sm:px-8 sticky top-18 z-30">
+          <div className="max-w-7xl mx-auto flex items-center justify-between py-2">
+            <div className="flex items-center gap-1.5 bg-[#0d0f15] p-1 rounded-2xl border border-white/[0.07] overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveTab('studio')}
+                className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'studio'
+                    ? 'scalora-pill-tab-active'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Studio (Create Post)</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('queue')}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
-                activeTab === 'queue'
-                  ? 'scalora-pill-tab-active'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Review & Scheduled Queue</span>
-              {pendingCount > 0 && (
-                <span className="ml-1 px-2 py-0.2 rounded-full text-[10px] font-extrabold bg-[#FF6B4A] text-white">
-                  {pendingCount}
+              <button
+                type="button"
+                onClick={() => setActiveTab('queue')}
+                className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                  activeTab === 'queue'
+                    ? 'scalora-pill-tab-active'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Review & Scheduled Queue</span>
+                {pendingCount > 0 && (
+                  <span className="ml-1 px-2 py-0.2 rounded-full text-[10px] font-extrabold bg-[#FF6B4A] text-white">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'history'
+                    ? 'scalora-pill-tab-active'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Published Posts</span>
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-white/5 text-slate-400 font-semibold">
+                  {publishedPosts.length}
                 </span>
-              )}
-            </button>
+              </button>
+            </div>
 
             <button
-              onClick={() => setActiveTab('history')}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'history'
-                  ? 'scalora-pill-tab-active'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-              }`}
+              type="button"
+              onClick={() => setShowBeginnerGuide(!showBeginnerGuide)}
+              className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer py-1.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA84A]/40"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Published Posts</span>
-              <span className="text-[10px] px-2 py-0.2 rounded-full bg-white/5 text-slate-400 font-semibold">
-                {publishedPosts.length}
-              </span>
+              <HelpCircle className="w-3.5 h-3.5 text-[#FFA84A]" />
+              <span>{showBeginnerGuide ? 'Hide Guide' : 'Workflow Guide'}</span>
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowBeginnerGuide(!showBeginnerGuide)}
-            className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer py-1.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-[#FFA84A]" />
-            <span>{showBeginnerGuide ? 'Hide Guide' : 'Workflow Guide'}</span>
-          </button>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       {/* Main Workspace */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
         {/* Beginner Step Cards — Scalora Ambient Glass Card */}
-        {showBeginnerGuide && (
+        {showBeginnerGuide && !isGrowthcrew && (
           <div className="scalora-card-glow rounded-3xl p-6 relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
@@ -733,7 +784,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   ★
                 </div>
                 <h3 className="font-extrabold text-sm text-white tracking-tight">
-                  High-Converting Social Workflow: <span className="font-serif-accent italic font-normal text-[#FFA84A] text-base">3 Simple Steps</span>
+                  How it works
                 </h3>
               </div>
               <button
@@ -748,36 +799,41 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Step 1 */}
               <div className="p-4 rounded-2xl bg-[#090b10]/60 border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#34D399]">Step 1 · Cloud Media</span>
-                <h4 className="text-sm font-bold text-white">Attach Media / Upload to S3</h4>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#34D399]">Step 1</span>
+                <h4 className="text-sm font-bold text-white">Add media</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Upload an image/video or select from Growthcrew AI showcase. Files stream directly to your S3 bucket.
+                  Upload an image or video, or pick a preset.
                 </p>
               </div>
 
               {/* Step 2 */}
               <div className="p-4 rounded-2xl bg-[#090b10]/60 border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A855F7]">Step 2 · Gemini AI</span>
-                <h4 className="text-sm font-bold text-white">Generate High-Impact Captions</h4>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A855F7]">Step 2</span>
+                <h4 className="text-sm font-bold text-white">Write the caption</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Enter your topic to craft viral hooks, perfectly spaced paragraphs, and targeted hashtags with 1 click.
+                  Enter a topic and generate a caption.
                 </p>
               </div>
 
               {/* Step 3 */}
               <div className="p-4 rounded-2xl bg-[#090b10]/60 border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFA84A]">Step 3 · Postiz Meta</span>
-                <h4 className="text-sm font-bold text-white">Publish to Instagram & Facebook</h4>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFA84A]">Step 3</span>
+                <h4 className="text-sm font-bold text-white">Publish</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Simulate live Meta posts and schedule or instantly broadcast to your connected pages.
+                  Preview, then schedule or post to Instagram and Facebook.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 1: STUDIO (CREATE POST) */}
-        {activeTab === 'studio' && (
+        {isGrowthcrew && (
+          <section aria-label="GrowthCrew outreach">
+            <OutreachPanel />
+          </section>
+        )}
+
+        {!isGrowthcrew && activeTab === 'studio' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: STEP 1 (Media Hub) + STEP 2 (AI Caption Studio) */}
             <div className="lg:col-span-7 space-y-6">
@@ -789,8 +845,8 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       1
                     </span>
                     <div>
-                      <h2 className="text-sm font-extrabold text-white tracking-tight">Attach Media Asset</h2>
-                      <p className="text-[11px] text-slate-400">AWS S3 Direct Cloud Uploads & Creative Presets</p>
+                      <h2 className="text-sm font-extrabold text-white tracking-tight">Media</h2>
+                      <p className="text-[11px] text-slate-400">Upload or pick a preset</p>
                     </div>
                   </div>
 
@@ -816,7 +872,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       }`}
                     >
                       <Upload className="w-3 h-3" />
-                      <span>Upload to S3</span>
+                      <span>Upload</span>
                     </button>
                   </div>
                 </div>
@@ -824,7 +880,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                 {/* Upload & Preset Options */}
                 {mediaSourceType === 'sample' && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-300 block">Choose Curated Asset:</label>
+                    <label className="text-xs font-bold text-slate-300 block">Presets</label>
                     <div className="grid grid-cols-3 gap-3">
                       {SAMPLE_IN2PETA_MEDIA.map((item, idx) => (
                         <div
@@ -878,9 +934,9 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   </div>
                   <div className="text-center">
                     <p className="text-xs font-bold text-white group-hover:text-[#FFA84A] transition-colors">
-                      {isUploading ? 'Uploading to AWS S3...' : 'Click or Drag & Drop to Upload'}
+                      {isUploading ? 'Uploading…' : 'Click or drag to upload'}
                     </p>
-                    <p className="text-[10px] text-slate-500">Supports JPG, PNG, WEBP, MP4 & MOV (Direct S3 storage)</p>
+                    <p className="text-[10px] text-slate-500">Supports JPG, PNG, WEBP, MP4 & MOV</p>
                   </div>
                 </div>
 
@@ -910,15 +966,15 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       2
                     </span>
                     <div>
-                      <h2 className="text-sm font-extrabold text-white tracking-tight">AI Content & Caption Generator</h2>
-                      <p className="text-[11px] text-slate-400">Powered by Google Gemini Multi-Model Cascade</p>
+                      <h2 className="text-sm font-extrabold text-white tracking-tight">Caption</h2>
+                      <p className="text-[11px] text-slate-400">Topic in, caption out</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Inspiration Idea Chips */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-300 block">Quick Inspiration Topics:</label>
+                  <label className="text-xs font-bold text-slate-300 block">Ideas</label>
                   <div className="flex flex-wrap gap-2">
                     {INSPIRATION_CHIPS.map((chip, i) => (
                       <button
@@ -938,10 +994,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
 
                 {/* Topic Input Field */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Campaign Topic or Offer Concept:</label>
+                  <label className="text-xs font-bold text-slate-300 block">Topic</label>
                   <textarea
                     rows={3}
-                    placeholder="e.g. Grand opening of our new boutique rooftop in Sydney with ocean views and artisan cocktails..."
+                    placeholder="What is this post about?"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     className="w-full bg-[#07080b] border border-white/10 rounded-2xl p-3.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FF6B4A]/60 focus:ring-2 focus:ring-[#FF6B4A]/15 leading-relaxed resize-none"
@@ -1020,12 +1076,12 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   {isGenerating ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                      <span>Crafting Captions with Gemini AI...</span>
+                      <span>Generating…</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 text-slate-950" />
-                      <span>Generate AI Caption & Hook</span>
+                      <span>Generate caption</span>
                     </>
                   )}
                 </button>
@@ -1041,7 +1097,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                     <span className="w-6 h-6 rounded-lg bg-[#FFA84A]/20 text-[#FFA84A] flex items-center justify-center font-extrabold text-xs border border-[#FFA84A]/30">
                       3
                     </span>
-                    <h3 className="text-sm font-extrabold text-white">Live Meta Post Simulator</h3>
+                    <h3 className="text-sm font-extrabold text-white">Preview</h3>
                   </div>
 
                   {/* Aspect Ratio Selector */}
@@ -1146,7 +1202,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       <p className={`text-slate-300 text-[11px] leading-relaxed whitespace-pre-line ${expandedCaption ? '' : 'line-clamp-3'}`}>
                         {editCaption || (
                           <span className="text-slate-600 italic">
-                            Your AI generated caption and viral hooks will appear here...
+                            Caption preview
                           </span>
                         )}
                       </p>
@@ -1211,7 +1267,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         )}
 
         {/* TAB 2: REVIEW & SCHEDULED QUEUE */}
-        {activeTab === 'queue' && (
+        {!isGrowthcrew && activeTab === 'queue' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
               <div>
@@ -1221,7 +1277,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                     {queueList.length} Total
                   </span>
                 </h2>
-                <p className="text-xs text-slate-400">Manage pending approvals and scheduled social releases</p>
+                <p className="text-xs text-slate-400">Pending and scheduled posts</p>
               </div>
 
               {/* Filter Tabs */}
@@ -1352,7 +1408,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
         )}
 
         {/* TAB 3: PUBLISHED HISTORY */}
-        {activeTab === 'history' && (() => {
+        {!isGrowthcrew && activeTab === 'history' && (() => {
           const allPublished = (publishedPosts && publishedPosts.length > 0)
             ? publishedPosts
             : (queueData.queue || []).filter((p) => p.status === 'PUBLISHED');
@@ -1367,7 +1423,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                       {allPublished.length} Live
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-400">All campaigns and posts broadcast live to Meta channels</p>
+                  <p className="text-xs text-slate-400">Posts that went live</p>
                 </div>
                 <a
                   href="https://facebook.com/profile.php?id=61594485176950&sk=photos"
@@ -1448,7 +1504,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                         <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
                           <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            Meta Graph API
+                            Published
                           </span>
                           <a
                             href="https://facebook.com/profile.php?id=61594485176950&sk=photos"
