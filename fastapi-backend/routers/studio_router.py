@@ -313,6 +313,13 @@ async def get_published():
     published = [p for p in queue if p.get("status") == "PUBLISHED"]
     return published
 
+def extract_postiz_id(res):
+    if isinstance(res, list) and len(res) > 0:
+        return res[0].get("postId")
+    elif isinstance(res, dict):
+        return res.get("postId") or res.get("id")
+    return None
+
 @router.post("/queue")
 async def create_queue_post(post: CreateQueuePostRequest):
     data = post.model_dump()
@@ -338,7 +345,7 @@ async def create_queue_post(post: CreateQueuePostRequest):
                 media_type=saved.get("mediaType", "image")
             )
             saved = QueueService.update_post(saved["id"], {
-                "postizPostId": postiz_result.get("postId") if isinstance(postiz_result, dict) else None,
+                "postizPostId": extract_postiz_id(postiz_result),
                 "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             })
         except Exception as e:
@@ -382,7 +389,7 @@ async def approve_post(post_id: str):
 
     updated = QueueService.update_post(post_id, {
         "status": "SCHEDULED",
-        "postizPostId": postiz_result.get("postId") if isinstance(postiz_result, dict) else None,
+        "postizPostId": extract_postiz_id(postiz_result),
         "reviewedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     })
 
@@ -396,7 +403,6 @@ async def approve_post(post_id: str):
 async def publish_now(post_id: str):
     post = QueueService.get_post_by_id(post_id)
     if not post:
-        # Fallback to the latest post in the queue if post_id is 'new'
         queue = QueueService.get_queue()
         if queue:
             post = queue[0]
@@ -419,7 +425,7 @@ async def publish_now(post_id: str):
 
     updated = QueueService.update_post(post_id, {
         "status": "PUBLISHED",
-        "postizPostId": postiz_result.get("postId") if isinstance(postiz_result, dict) else None,
+        "postizPostId": extract_postiz_id(postiz_result),
         "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "reviewedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     })
