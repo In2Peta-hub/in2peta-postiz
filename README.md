@@ -1,59 +1,73 @@
-# PostPulse — Custom Admin & Post Approval Application
+# PostPulse Studio
 
-A client-facing Admin and Approval Portal for social media management, built with **React**, **Tailwind CSS**, **Node.js Express**, **Google Gemini**, and the **Postiz Engine**.
+React + FastAPI app for social publishing, with an optional **GrowthCrew** mode for email outreach.
 
----
+## Product modes
 
-## 🌟 Key Features
+Header toggle: **PostPulse** ↔ **GrowthCrew**
 
-1. **Google Gemini Content Studio**:
-   - High-converting post generation powered by Google's latest `gemini-3.6-flash`.
-   - Generates structured Hook / Headline, body caption with formatting and emojis, targeted hashtags, recommended visual/imagery concepts, and Call-To-Action (CTA).
-   - Instant live editing of all generated fields before scheduling.
+| Mode | Branding | UI |
+| --- | --- | --- |
+| **PostPulse** | PostPulse Studio | Studio (create) · Review & queue · Published |
+| **GrowthCrew** | GrowthCrew Outreach | Lead search, draft/send email, replies |
 
-2. **Master Auto-Approval Workflow (Core Feature)**:
-   - **Auto-Approval ON (⚡)**: Newly generated posts are automatically scheduled directly to Postiz without manual intervention.
-   - **Auto-Approval OFF (🛡️)**: Newly generated posts are placed in a **Pending Review** queue. Reviewers can preview the live post card, edit the text/schedule slot, approve, or reject.
+The app is not renamed wholesale to Growthcrew. GrowthCrew is a second product mode.
 
-3. **Live Social Media Feed Mockup**:
-   - Interactive preview simulating a live Facebook post feed (with avatar, channel badge, formatted body, hashtags, and mock engagement controls).
+## Stack
 
-4. **Multi-Tab Dashboard**:
-   - **AI Post Studio**: Generate & refine posts with one click.
-   - **Review Queue**: Filter posts by *Pending Review*, *Scheduled*, *Rejected*, and *All*.
-   - **Live Feed & History**: Real-time sync with Postiz and Meta Graph API, including direct "View Live on Facebook" links.
-   - **Settings & AWS**: Diagnostic dashboard showing Postiz connection, Gemini model status, and AWS S3 bucket configuration.
+- **Frontend:** React + Vite + Tailwind (`client/`)
+- **Backend:** FastAPI (`fastapi-backend/`) on port `3005`
+- **Storage:** JSON files under `fastapi-backend/data/` (queue + outreach) — no Postgres
+- **Media:** AWS S3 uploads (optional; falls back without credentials)
+- **Publishing:** Postiz engine optional on `:4007`
+- **Captions:** Gemini (via `GEMINI_API_KEY`)
+- **Outreach:** CoreClaw + AgentMail + LLM keys (see `.env.example`)
+- **Location autocomplete:** local India city list; optional OpenStreetMap Nominatim — no Google Places key
 
-5. **AWS S3 Media Architecture**:
-   - Prepared for bucket `in2peta-postiz-media` in AWS Region `ap-southeast-2` (Sydney).
-   - Ready for IAM Role ARN temporary credentials as soon as supplied by the AWS manager.
+## Run locally
 
----
-
-## 🚀 Getting Started
-
-### Access the Application
-The application is running and accessible in your web browser at:
-👉 **[http://localhost:3005](http://localhost:3005)**
-
-### Commands (from `admin-approval-portal` folder):
 ```bash
-# Start the fullstack application on http://localhost:3005
-npm start
+# Backend
+cd fastapi-backend
+pip install -r requirements.txt
+cp .env.example .env   # fill keys as needed; never commit secrets
+uvicorn main:app --port 3005 --reload
 
-# Run frontend dev server with hot reload on http://localhost:5173
-npm run dev:client
-
-# Rebuild the production client bundle
-npm run build
+# Frontend (separate terminal)
+cd client
+bun install
+bun run dev
 ```
 
----
+- App: http://localhost:5173  
+- API docs: http://localhost:3005/docs  
 
-## ⚙️ Configuration & Environment
+Set `VITE_API_URL=http://localhost:3005` in `client/.env` if the Vite proxy is not used.
 
-- **Server Port**: `3005`
-- **Postiz Engine URL**: `http://localhost:4007/api/public/v1`
-- **Postiz Connected Channel**: `Mytestpage` (Facebook Page)
-- **LLM**: Google Gemini (`gemini-3.6-flash`)
-- **AWS S3 Bucket**: `in2peta-postiz-media` (Sydney `ap-southeast-2`)
+**Windows:** `start-local.bat` starts FastAPI on `:3005` and the Vite client on `:5173`.
+
+Prefer `cd client && bun run …` over root scripts that use `bun --cwd` (not reliable on all Bun builds).
+
+## GrowthCrew env
+
+Copy keys from `fastapi-backend/.env.example`. Outreach needs some of:
+
+- `CORECLAW_API_KEY` — lead search  
+- `AGENTMAIL_API_KEY` — sending inboxes / mail  
+- `LITELLM_MASTER_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` — draft generation  
+
+Studio-only use can leave outreach keys blank.
+
+## Layout
+
+```
+client/                 React app (PostPulse + GrowthCrew UI)
+fastapi-backend/        FastAPI (studio + /api/growthcrew/*)
+fastapi-backend/data/   data.json (queue), outreach.json (leads/threads)
+server/                 Legacy Express (optional; FastAPI is the primary API)
+```
+
+## Related guides
+
+- [REACT_INTEGRATION_GUIDE.md](./REACT_INTEGRATION_GUIDE.md) — embed the React client  
+- [FASTAPI_INTEGRATION_GUIDE.md](./FASTAPI_INTEGRATION_GUIDE.md) — mount the FastAPI routers  

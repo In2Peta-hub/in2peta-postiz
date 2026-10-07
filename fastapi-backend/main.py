@@ -1,8 +1,11 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from config import CONFIG
+from growthcrew.errors import GrowthcrewError
 from routers.studio_router import router as studio_router
+from routers.growthcrew_router import router as growthcrew_router
 
 app = FastAPI(
     title="Growthcrew Social Studio API",
@@ -19,8 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Growthcrew Studio Router
+# Include Growthcrew Studio Router and the outreach API ported from gpu_platform.
 app.include_router(studio_router)
+app.include_router(growthcrew_router)
+
+
+@app.exception_handler(GrowthcrewError)
+async def growthcrew_error_handler(_request: Request, exc: GrowthcrewError):
+    return JSONResponse(status_code=exc.status, content={"error": str(exc), "code": exc.code})
 
 @app.get("/")
 async def root():

@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 **/node_modules/
+**/.venv/
 
 # Production build artifacts
 client/dist/
@@ -11,6 +12,7 @@ server/uploads/*
 !server/uploads/.gitkeep
 server/data/tunnel.txt
 server/data/data.json
+fastapi-backend/data/outreach.json
 
 # Environment variables & secrets
 .env
@@ -28,3 +30,7 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+fastapi-backend/data/data.json
+fastapi-backend/data/*.json
+**/__pycache__/
+*.py[cod]
