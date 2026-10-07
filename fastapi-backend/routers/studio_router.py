@@ -35,6 +35,29 @@ class UploadBase64Request(BaseModel):
     filename: Optional[str] = None
     mimeType: Optional[str] = "image/jpeg"
 
+class CreateQueuePostRequest(BaseModel):
+    id: Optional[str] = None
+    topic: Optional[str] = "Untitled Post"
+    hook: Optional[str] = ""
+    caption: Optional[str] = ""
+    content: Optional[str] = ""
+    hashtags: Optional[List[str]] = Field(default_factory=list)
+    callToAction: Optional[str] = ""
+    format: Optional[str] = "feed"
+    visualPrompt: Optional[str] = ""
+    visualKeyword: Optional[str] = ""
+    visualUrl: Optional[str] = None
+    mediaUrl: Optional[str] = None
+    mediaType: Optional[str] = "image"
+    reelStoryboard: Optional[Any] = None
+    fullPostText: Optional[str] = None
+    integrationId: Optional[str] = None
+    channelName: Optional[str] = None
+    platform: Optional[str] = "instagram"
+    platforms: Optional[List[str]] = Field(default_factory=lambda: ["instagram", "facebook"])
+    scheduledDate: Optional[str] = None
+    status: Optional[str] = "PENDING_REVIEW"
+
 class UpdatePostRequest(BaseModel):
     hook: Optional[str] = None
     caption: Optional[str] = None
@@ -284,6 +307,51 @@ async def get_queue():
     }
     return {"counts": counts, "queue": queue}
 
+@router.get("/published")
+async def get_published():
+    queue = QueueService.get_queue()
+    published = [p for p in queue if p.get("status") == "PUBLISHED"]
+    return published
+
+@router.post("/queue")
+async def create_queue_post(post: CreateQueuePostRequest):
+    data = post.model_dump()
+    if data.get("mediaUrl") and not data.get("visualUrl"):
+        data["visualUrl"] = data["mediaUrl"]
+
+    if not data.get("scheduledDate"):
+        data["scheduledDate"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 7200))
+
+    channels = QueueService.get_channels()
+    if not data.get("integrationId") and channels:
+        data["integrationId"] = channels[0].get("id")
+
+    saved = QueueService.add_to_queue(data)
+
+    if data.get("status") == "PUBLISHED" and saved.get("integrationId"):
+        try:
+            postiz_result = PostizService.create_post(
+                integration_id=saved["integrationId"],
+                content=saved.get("fullPostText", ""),
+                post_type="now",
+                media_url=saved.get("visualUrl"),
+                media_type=saved.get("mediaType", "image")
+            )
+            saved = QueueService.update_post(saved["id"], {
+                "postizPostId": postiz_result.get("postId") if isinstance(postiz_result, dict) else None,
+                "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            })
+        except Exception as e:
+            print(f"Publish note: {e}")
+
+    return {"success": True, "post": saved}
+
+@router.post("/publish")
+async def direct_publish(post: CreateQueuePostRequest):
+    data = post.model_dump()
+    data["status"] = "PUBLISHED"
+    return await create_queue_post(CreateQueuePostRequest(**data))
+
 @router.put("/queue/{post_id}")
 async def update_post(post_id: str, updates: UpdatePostRequest):
     payload = {k: v for k, v in updates.model_dump().items() if v is not None}
@@ -320,7 +388,7 @@ async def approve_post(post_id: str):
 
     return {
         "success": True,
-        "message": "Post approved and scheduled with media for Instagram!",
+        "message": "Post approved and scheduled with media for Instagram & Facebook!",
         "post": updated
     }
 
@@ -328,7 +396,13 @@ async def approve_post(post_id: str):
 async def publish_now(post_id: str):
     post = QueueService.get_post_by_id(post_id)
     if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
+        # Fallback to the latest post in the queue if post_id is 'new'
+        queue = QueueService.get_queue()
+        if queue:
+            post = queue[0]
+            post_id = post["id"]
+        else:
+            raise HTTPException(status_code=404, detail="No post found to publish")
 
     postiz_result = None
     if post.get("integrationId"):

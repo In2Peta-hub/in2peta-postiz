@@ -1,31 +1,102 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --scalora-bg: #07080a;
+    --scalora-surface: #0e1118;
+    --scalora-surface-hover: #141822;
+    --scalora-border: rgba(255, 255, 255, 0.08);
+    --scalora-border-light: rgba(255, 255, 255, 0.14);
+    --scalora-coral: #FF6B4A;
+    --scalora-amber: #FFA84A;
+    --scalora-rose: #FF5376;
+    --scalora-violet: #8B5CF6;
+  }
+
   body {
-    background-color: #0f172a;
-    color: #f8fafc;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--scalora-bg);
+    color: #f1f5f9;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* Custom scrollbar */
+.font-serif-accent {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+/* Scalora Ambient Background Gradients */
+.scalora-mesh-bg {
+  background-image: 
+    radial-gradient(at 15% 10%, rgba(255, 107, 74, 0.12) 0px, transparent 50%),
+    radial-gradient(at 85% 15%, rgba(139, 92, 246, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 80%, rgba(255, 83, 118, 0.08) 0px, transparent 50%);
+}
+
+.scalora-card-glow {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 24, 34, 0.7) 0%, rgba(12, 15, 22, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+}
+
+.scalora-card-glow:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.scalora-btn-primary {
+  background: linear-gradient(135deg, #FF6B4A 0%, #FFA84A 100%);
+  box-shadow: 0 4px 20px -2px rgba(255, 107, 74, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scalora-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -2px rgba(255, 107, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.scalora-btn-primary:active {
+  transform: translateY(0);
+}
+
+.scalora-pill-tab {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.scalora-pill-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.scalora-pill-tab-active {
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.15) 0%, rgba(255, 168, 74, 0.1) 100%);
+  border: 1px solid rgba(255, 107, 74, 0.4);
+  color: #FFA84A;
+  box-shadow: 0 0 15px rgba(255, 107, 74, 0.15);
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #07080a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
+  background: #1e2433;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #2e384d;
 }
