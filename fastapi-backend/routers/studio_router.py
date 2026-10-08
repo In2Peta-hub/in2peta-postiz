@@ -410,19 +410,22 @@ async def publish_now(post_id: str):
         else:
             raise HTTPException(status_code=404, detail="No post found to publish")
 
-    postiz_result = None
-    if post.get("integrationId"):
-        try:
-            postiz_result = PostizService.create_post(
-                integration_id=post["integrationId"],
-                content=post.get("fullPostText", ""),
-                post_type="now",
-                media_url=post.get("visualUrl"),
-                media_type=post.get("mediaType", "image")
-            )
-        except Exception as e:
-            print(f"Publish error: {e}")
-            raise HTTPException(status_code=502, detail=f"Failed to broadcast to Postiz/Facebook: {e}")
+    channels = QueueService.get_channels()
+    integration_id = post.get("integrationId") or (channels[0].get("id") if channels else None)
+    if not integration_id:
+        raise HTTPException(status_code=400, detail="No connected channel found. Please connect your channel first.")
+
+    try:
+        postiz_result = PostizService.create_post(
+            integration_id=integration_id,
+            content=post.get("fullPostText", "") or post.get("caption", ""),
+            post_type="now",
+            media_url=post.get("visualUrl") or post.get("mediaUrl"),
+            media_type=post.get("mediaType", "image")
+        )
+    except Exception as e:
+        print(f"Publish error: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to broadcast to Postiz/Facebook: {e}")
 
     postiz_id = extract_postiz_id(postiz_result)
     updated = QueueService.update_post(post_id, {

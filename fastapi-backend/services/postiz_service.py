@@ -69,9 +69,14 @@ class PostizService:
                 "path": media_url
             })
 
+        if post_type == "now":
+            target_date = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 30))
+        else:
+            target_date = scheduled_date or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 3600))
+
         payload = {
             "type": post_type,
-            "date": scheduled_date or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 3600)),
+            "date": target_date,
             "shortLink": False,
             "tags": [],
             "posts": [
