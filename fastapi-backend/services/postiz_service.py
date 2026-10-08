@@ -99,7 +99,16 @@ class PostizService:
             json=payload,
             timeout=45
         )
-        data = res.json()
         if not res.ok:
-            raise RuntimeError(data.get("message") or data.get("msg") or f"Postiz error: {res.status_code}")
-        return data
+            error_text = res.text
+            try:
+                err_data = res.json()
+                msg = err_data.get("message") or err_data.get("msg") or str(err_data)
+            except Exception:
+                msg = error_text[:200] if error_text else f"HTTP {res.status_code}"
+            raise RuntimeError(f"Postiz error ({res.status_code}): {msg}")
+
+        try:
+            return res.json()
+        except Exception:
+            return {"raw": res.text, "status": res.status_code}
