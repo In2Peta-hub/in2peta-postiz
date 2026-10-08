@@ -468,7 +468,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
             hook: editHook,
             caption: editCaption,
             hashtags: editHashtags.split(' ').filter(Boolean),
-            fullPostText: finalCaption || 'PostPulse social post',
+            fullPostText: finalCaption || 'GrowthCrew social post',
             mediaUrl: attachedMediaUrl,
             visualUrl: attachedMediaUrl,
             mediaType: attachedMediaType,
@@ -591,7 +591,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                   </>
                 ) : (
                   <>
-                    PostPulse <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Studio</span>
+                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Social Studio</span>
                   </>
                 )}
               </h1>
@@ -600,10 +600,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
             <div className="flex items-center gap-2 ml-1 pl-3 border-l border-white/10 shrink-0">
               <span
                 className={`text-[11px] font-bold transition-colors ${
-                  !isGrowthcrew ? 'text-white' : 'text-slate-500'
+                  !isGrowthcrew ? 'text-[#FFA84A]' : 'text-slate-500'
                 }`}
               >
-                PostPulse
+                Social Studio
               </span>
               <button
                 type="button"
@@ -611,12 +611,12 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                 aria-checked={isGrowthcrew}
                 aria-label={
                   isGrowthcrew
-                    ? 'Mode: GrowthCrew. Switch to PostPulse.'
-                    : 'Mode: PostPulse. Switch to GrowthCrew.'
+                    ? 'Mode: Cold Outreach. Switch to Social Studio.'
+                    : 'Mode: Social Studio. Switch to Cold Outreach.'
                 }
                 onClick={() => switchProductMode(isGrowthcrew ? 'social' : 'growthcrew')}
                 className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA84A]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07080a] ${
-                  isGrowthcrew ? 'bg-emerald-500' : 'bg-slate-800 border border-white/10'
+                  isGrowthcrew ? 'bg-gradient-to-r from-[#FF6B4A] to-[#FF5376]' : 'bg-slate-800 border border-white/10'
                 }`}
               >
                 <span
@@ -628,10 +628,10 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               </button>
               <span
                 className={`text-[11px] font-bold transition-colors ${
-                  isGrowthcrew ? 'text-white' : 'text-slate-500'
+                  isGrowthcrew ? 'text-[#FFA84A]' : 'text-slate-500'
                 }`}
               >
-                GrowthCrew
+                Cold Outreach
               </span>
             </div>
           </div>

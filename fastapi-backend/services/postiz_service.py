@@ -32,7 +32,7 @@ class PostizService:
             res = requests.get(
                 f"{CONFIG.POSTIZ_API_URL}/integrations",
                 headers=cls.get_headers(),
-                timeout=2
+                timeout=6
             )
             if res.status_code == 200:
                 if is_postiz_offline:
@@ -92,7 +92,7 @@ class PostizService:
             f"{CONFIG.POSTIZ_API_URL}/posts",
             headers=cls.get_headers(),
             json=payload,
-            timeout=8
+            timeout=45
         )
         data = res.json()
         if not res.ok:
