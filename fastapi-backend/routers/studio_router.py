@@ -421,11 +421,13 @@ async def publish_now(post_id: str):
                 media_type=post.get("mediaType", "image")
             )
         except Exception as e:
-            print(f"Publish notice: {e}")
+            print(f"Publish error: {e}")
+            raise HTTPException(status_code=502, detail=f"Failed to broadcast to Postiz/Facebook: {e}")
 
+    postiz_id = extract_postiz_id(postiz_result)
     updated = QueueService.update_post(post_id, {
         "status": "PUBLISHED",
-        "postizPostId": extract_postiz_id(postiz_result),
+        "postizPostId": postiz_id,
         "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "reviewedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     })
@@ -433,7 +435,8 @@ async def publish_now(post_id: str):
     return {
         "success": True,
         "message": "Post published immediately to your channel!",
-        "post": updated
+        "post": updated,
+        "postizPostId": postiz_id
     }
 
 @router.delete("/queue/{post_id}")
