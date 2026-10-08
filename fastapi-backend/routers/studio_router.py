@@ -10,6 +10,7 @@ from services.gemini_service import GeminiService
 from services.s3_service import S3Service
 from services.postiz_service import PostizService
 from services.queue_service import QueueService
+from services.facebook_service import FacebookService
 
 router = APIRouter(prefix="/api", tags=["Growthcrew Studio"])
 
@@ -412,25 +413,45 @@ async def publish_now(post_id: str):
 
     channels = QueueService.get_channels()
     integration_id = post.get("integrationId") or (channels[0].get("id") if channels else None)
-    if not integration_id:
-        raise HTTPException(status_code=400, detail="No connected channel found. Please connect your channel first.")
+    clean_text = post.get("fullPostText", "") or post.get("caption", "")
+    media_url = post.get("visualUrl") or post.get("mediaUrl")
 
-    try:
-        postiz_result = PostizService.create_post(
-            integration_id=integration_id,
-            content=post.get("fullPostText", "") or post.get("caption", ""),
-            post_type="now",
-            media_url=post.get("visualUrl") or post.get("mediaUrl"),
-            media_type=post.get("mediaType", "image")
-        )
-    except Exception as e:
-        print(f"Publish error: {e}")
-        raise HTTPException(status_code=502, detail=f"Failed to broadcast to Postiz/Facebook: {e}")
+    # 1. Direct Meta Graph API publishing if Page token configured (e.g. on Render)
+    fb_direct_result = None
+    if CONFIG.FB_PAGE_ACCESS_TOKEN and CONFIG.FB_PAGE_ID:
+        try:
+            fb_direct_result = FacebookService.publish_post(
+                page_id=CONFIG.FB_PAGE_ID,
+                access_token=CONFIG.FB_PAGE_ACCESS_TOKEN,
+                message=clean_text,
+                image_url=media_url
+            )
+            print("Direct Facebook Publish Success:", fb_direct_result)
+        except Exception as fb_err:
+            print("Direct Facebook Publish notice, trying Postiz:", fb_err)
 
-    postiz_id = extract_postiz_id(postiz_result)
+    # 2. Postiz publishing if direct Meta was not executed or as provider
+    postiz_result = None
+    if not fb_direct_result:
+        if not integration_id:
+            raise HTTPException(status_code=400, detail="No connected channel found. Please connect your channel first.")
+
+        try:
+            postiz_result = PostizService.create_post(
+                integration_id=integration_id,
+                content=clean_text,
+                post_type="now",
+                media_url=media_url,
+                media_type=post.get("mediaType", "image")
+            )
+        except Exception as e:
+            print(f"Publish error: {e}")
+            raise HTTPException(status_code=502, detail=f"Failed to broadcast to Postiz/Facebook: {e}")
+
+    final_post_id = extract_postiz_id(postiz_result) or (fb_direct_result.get("postId") if fb_direct_result else None)
     updated = QueueService.update_post(post_id, {
         "status": "PUBLISHED",
-        "postizPostId": postiz_id,
+        "postizPostId": final_post_id,
         "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "reviewedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     })
@@ -439,8 +460,15 @@ async def publish_now(post_id: str):
         "success": True,
         "message": "Post published immediately to your channel!",
         "post": updated,
-        "postizPostId": postiz_id
+        "postizPostId": final_post_id,
+        "directFacebook": bool(fb_direct_result)
     }
+
+@router.get("/facebook/status")
+async def get_facebook_status():
+    if not CONFIG.FB_PAGE_ACCESS_TOKEN:
+        return {"configured": False, "pageId": CONFIG.FB_PAGE_ID, "message": "FB_PAGE_ACCESS_TOKEN not set"}
+    return FacebookService.verify_token(CONFIG.FB_PAGE_ID, CONFIG.FB_PAGE_ACCESS_TOKEN)
 
 @router.delete("/queue/{post_id}")
 async def delete_post(post_id: str):

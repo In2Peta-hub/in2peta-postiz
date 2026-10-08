@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: growthcrew-backend
+    runtime: python
+    rootDir: fastapi-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: S3_BUCKET
+        value: in2peta-postiz-media
+      - key: AWS_REGION
+        value: ap-southeast-2
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: FB_PAGE_ID
+        value: "61594485176950"
+      - key: FB_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: POSTIZ_API_URL
+        value: http://127.0.0.1:4007/api/public/v1
+      - key: POSTIZ_API_KEY
+        sync: false
