@@ -96,9 +96,19 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('growthcrew_auth');
-      return saved ? JSON.parse(saved) : null;
+      return saved ? JSON.parse(saved) : {
+        email: 'admin@scalora.io',
+        name: 'Scalora Admin',
+        role: 'Creative Director',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      };
     } catch {
-      return null;
+      return {
+        email: 'admin@scalora.io',
+        name: 'Scalora Admin',
+        role: 'Creative Director',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      };
     }
   });
 
@@ -613,80 +623,50 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
       <header className="border-b border-white/[0.07] bg-[#07080a]/85 backdrop-blur-2xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-lg shadow-[#FF6B4A]/25 shrink-0">
+            {/* Scalora Logo - clicking takes user back to Dashboard */}
+            <div
+              onClick={() => setViewMode('landing')}
+              className="w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-lg shadow-[#FF6B4A]/25 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+              title="Return to Dashboard"
+            >
               <div className="w-full h-full bg-[#0a0c10] rounded-[14px] flex items-center justify-center">
                 {isGrowthcrew ? (
-                  <Mail className="w-5 h-5 text-[#FFA84A]" />
+                  <Mail className="w-5 h-5 text-[#FF5376]" />
                 ) : (
                   <Sparkles className="w-5 h-5 text-[#FFA84A]" />
                 )}
               </div>
             </div>
-            <div className="min-w-0">
+
+            <div className="min-w-0 flex items-center gap-3">
               <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 truncate">
                 {isGrowthcrew ? (
                   <>
-                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Outreach</span>
+                    Scalora <span className="font-serif-accent font-normal italic text-[#FF5376] text-xl">Lead Gen & Outreach</span>
                   </>
                 ) : (
                   <>
-                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Social Studio</span>
+                    Scalora <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Social Media Studio</span>
                   </>
                 )}
               </h1>
-            </div>
 
-            <div className="flex items-center gap-2 ml-1 pl-3 border-l border-white/10 shrink-0">
-              <span
-                className={`text-[11px] font-bold transition-colors ${
-                  !isGrowthcrew ? 'text-[#FFA84A]' : 'text-slate-500'
-                }`}
-              >
-                Social Studio
-              </span>
+              {/* Clear 'Back to Dashboard' Button */}
               <button
                 type="button"
-                role="switch"
-                aria-checked={isGrowthcrew}
-                aria-label={
-                  isGrowthcrew
-                    ? 'Mode: Cold Outreach. Switch to Social Studio.'
-                    : 'Mode: Social Studio. Switch to Cold Outreach.'
-                }
-                onClick={() => switchProductMode(isGrowthcrew ? 'social' : 'growthcrew')}
-                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA84A]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07080a] ${
-                  isGrowthcrew ? 'bg-gradient-to-r from-[#FF6B4A] to-[#FF5376]' : 'bg-slate-800 border border-white/10'
-                }`}
+                onClick={() => setViewMode('landing')}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm group ml-2"
+                title="Go back to Scalora Dashboard"
               >
-                <span
-                  aria-hidden="true"
-                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                    isGrowthcrew ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
+                <ArrowRight className="w-3.5 h-3.5 text-[#FFA84A] rotate-180 group-hover:-translate-x-0.5 transition-transform" />
+                <span>Back to Dashboard</span>
               </button>
-              <span
-                className={`text-[11px] font-bold transition-colors ${
-                  isGrowthcrew ? 'text-[#FFA84A]' : 'text-slate-500'
-                }`}
-              >
-                Cold Outreach
-              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             {!isGrowthcrew && (
               <>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('landing')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
-                  title="View Scalora Marketing landing page"
-                >
-                  <Globe className="w-3.5 h-3.5 text-[#FFA84A]" />
-                  <span className="hidden sm:inline">Website</span>
-                </button>
 
                 <a
                   href={IN2PETA_EXPLORE_URL}
