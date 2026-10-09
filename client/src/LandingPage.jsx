@@ -17,10 +17,11 @@ import {
   ChevronRight,
   Menu,
   X,
-  Play
+  Play,
+  LogOut
 } from 'lucide-react';
 
-export default function LandingPage({ onNavigate, onLoginClick }) {
+export default function LandingPage({ onNavigate, onLoginClick, currentUser, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -53,7 +54,7 @@ export default function LandingPage({ onNavigate, onLoginClick }) {
           <nav className="hidden md:flex items-center gap-1.5 lg:gap-2 bg-white/[0.03] border border-white/[0.08] p-1.5 rounded-full backdrop-blur-xl">
             <button
               onClick={() => onNavigate('social')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-all group"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
             >
               <Share2 className="w-4 h-4 text-[#FF6B4A] group-hover:scale-110 transition-transform" />
               <span>Social Media</span>
@@ -62,7 +63,7 @@ export default function LandingPage({ onNavigate, onLoginClick }) {
 
             <button
               onClick={() => onNavigate('leadgen')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-all group"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
             >
               <Mail className="w-4 h-4 text-[#FF5376] group-hover:scale-110 transition-transform" />
               <span>Lead Gen</span>
@@ -84,27 +85,81 @@ export default function LandingPage({ onNavigate, onLoginClick }) {
             </a>
           </nav>
 
-          {/* Right Action Buttons: Login & Get Started */}
+          {/* Right Action Buttons: User Avatar 'A' (like Google) or Login & Get Started */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={onLoginClick}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all flex items-center gap-2"
-            >
-              <Lock className="w-4 h-4 text-slate-400" />
-              <span>Log in</span>
-            </button>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                {/* Google-style 'A' Avatar Profile */}
+                <div className="relative group">
+                  <button
+                    type="button"
+                    title={`Google Account: ${currentUser?.name || 'Aarya'} (${currentUser?.email || 'aarya@in2peta.com'})`}
+                    className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] p-[2px] shrink-0 shadow-lg shadow-[#FF6B4A]/25 hover:scale-105 hover:ring-2 hover:ring-[#FFA84A]/40 transition-all cursor-pointer flex items-center justify-center group/avatar"
+                  >
+                    <div className="w-full h-full bg-[#0d0f17] group-hover/avatar:bg-[#161a26] rounded-full flex items-center justify-center font-extrabold text-[#FFA84A] text-sm tracking-tight transition-colors">
+                      {currentUser?.initial || 'A'}
+                    </div>
+                  </button>
 
-            <button
-              onClick={() => onNavigate('social')}
-              className="relative group overflow-hidden px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-xl shadow-[#FF6B4A]/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] transition-all group-hover:opacity-90" />
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-[#FFA84A] to-[#FF6B4A] blur-sm" />
-              <span className="relative z-10 flex items-center gap-2">
-                <span>Get started free</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
+                  {/* Dropdown Menu (Google Account card) */}
+                  <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-[#0c0e15] border border-white/10 shadow-2xl p-4 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50">
+                    <div className="flex flex-col items-center text-center pb-3 border-b border-white/[0.08] mb-3">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] p-[2px] shadow-lg mb-2">
+                        <div className="w-full h-full bg-[#0d0f17] rounded-full flex items-center justify-center font-extrabold text-white text-xl">
+                          {currentUser?.initial || 'A'}
+                        </div>
+                      </div>
+                      <div className="text-sm font-bold text-white truncate max-w-full">{currentUser?.name || 'Aarya'}</div>
+                      <div className="text-xs text-slate-400 truncate max-w-full">{currentUser?.email || 'aarya@in2peta.com'}</div>
+                      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[#FFA84A] bg-[#FFA84A]/10 border border-[#FFA84A]/25 px-2 py-0.5 rounded-full">
+                        Admin Workspace
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="w-full text-center py-2 px-3 text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onNavigate('social')}
+                  className="relative group overflow-hidden px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-xl shadow-[#FF6B4A]/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B4A] via-[#FF7D5A] to-[#FFA84A]" />
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <span>Launch Studio</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={onLoginClick}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Lock className="w-4 h-4 text-slate-400" />
+                  <span>Log in</span>
+                </button>
+
+                <button
+                  onClick={onLoginClick}
+                  className="relative group overflow-hidden px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-xl shadow-[#FF6B4A]/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] transition-all group-hover:opacity-90" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-[#FFA84A] to-[#FF6B4A] blur-sm" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span>Get started free</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -154,17 +209,40 @@ export default function LandingPage({ onNavigate, onLoginClick }) {
             </div>
 
             <div className="pt-2 border-t border-white/10 flex flex-col gap-3">
-              <button
-                onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
-                className="w-full py-3 rounded-xl border border-white/15 text-sm font-semibold text-white text-center hover:bg-white/5"
-              >
-                Log in
-              </button>
+              {currentUser ? (
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] p-[1.5px] shrink-0">
+                      <div className="w-full h-full bg-[#0d0f17] rounded-full flex items-center justify-center font-extrabold text-white text-xs">
+                        {currentUser?.initial || 'A'}
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white truncate">{currentUser?.name || 'Aarya'}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{currentUser?.email || 'aarya@in2peta.com'}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); onLogout(); }}
+                    className="p-2 rounded-xl text-rose-300 hover:bg-rose-500/10 text-xs font-semibold cursor-pointer"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
+                  className="w-full py-3 rounded-xl border border-white/15 text-sm font-semibold text-white text-center hover:bg-white/5"
+                >
+                  Log in
+                </button>
+              )}
               <button
                 onClick={() => { setMobileMenuOpen(false); onNavigate('social'); }}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6B4A] to-[#FFA84A] text-sm font-bold text-white text-center shadow-lg shadow-[#FF6B4A]/30"
               >
-                Get started free
+                Launch Studio
               </button>
             </div>
           </div>

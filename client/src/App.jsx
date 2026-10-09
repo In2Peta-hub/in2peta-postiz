@@ -89,39 +89,58 @@ const SAMPLE_IN2PETA_MEDIA = [
 ];
 
 export default function App({ defaultTab = 'studio', apiUrl } = {}) {
-  // View mode: 'landing' (Scalora marketing page) | 'app' (Studio / Outreach dashboard) | 'login'
-  const [viewMode, setViewMode] = useState('landing');
-
-  // Authentication State
+  // Authentication State - defaults to null on fresh open so login is shown first
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('growthcrew_auth');
-      return saved ? JSON.parse(saved) : {
-        email: 'admin@scalora.io',
-        name: 'Scalora Admin',
-        role: 'Creative Director',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (parsed.name === 'Scalora Admin') {
+        return {
+          email: 'aarya@in2peta.com',
+          name: 'Aarya',
+          initial: 'A',
+          role: 'Admin',
+        };
+      }
+      return {
+        ...parsed,
+        name: parsed.name || 'Aarya',
+        initial: parsed.initial || (parsed.name ? parsed.name[0].toUpperCase() : 'A'),
       };
     } catch {
-      return {
-        email: 'admin@scalora.io',
-        name: 'Scalora Admin',
-        role: 'Creative Director',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-      };
+      return null;
+    }
+  });
+
+  // View mode: 'login' | 'landing' (Scalora Dashboard) | 'app' (Studio / Outreach)
+  // When opening the app, the first screen is login
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('growthcrew_auth');
+      return saved ? 'landing' : 'login';
+    } catch {
+      return 'login';
     }
   });
 
   const handleLogin = (user) => {
-    setCurrentUser(user);
-    localStorage.setItem('growthcrew_auth', JSON.stringify(user));
-    showToast(`Welcome back, ${user.name}!`, 'success');
+    const activeUser = {
+      email: user?.email || 'aarya@in2peta.com',
+      name: user?.name || 'Aarya',
+      initial: user?.initial || 'A',
+      role: user?.role || 'Admin',
+    };
+    setCurrentUser(activeUser);
+    localStorage.setItem('growthcrew_auth', JSON.stringify(activeUser));
+    setViewMode('landing'); // After login, immediately open the dashboard!
+    showToast(`Welcome back, ${activeUser.name}!`, 'success');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('growthcrew_auth');
-    setViewMode('landing');
+    setViewMode('login'); // On logout, go directly to login page
     showToast('Signed out successfully.', 'info');
   };
 
@@ -550,41 +569,29 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     }
   };
 
-  // If user requested Login mode, render Login Page
-  if (viewMode === 'login') {
+  // 1. If not authenticated or in login mode, render Login Page first
+  if (!currentUser || viewMode === 'login') {
     return (
       <LoginPage
         onLogin={(user) => {
           handleLogin(user);
-          setViewMode('app');
+          setViewMode('landing');
         }}
-        onBack={() => setViewMode('landing')}
       />
     );
   }
 
-  // If viewMode is 'landing', render Landing Page
+  // 2. If viewMode is 'landing', render Dashboard (Scalora Marketing Landing Page)
   if (viewMode === 'landing') {
     return (
       <LandingPage
+        currentUser={currentUser}
+        onLogout={handleLogout}
         onNavigate={(mode) => {
           switchProductMode(mode === 'leadgen' ? 'growthcrew' : 'social');
           setViewMode('app');
         }}
         onLoginClick={() => setViewMode('login')}
-      />
-    );
-  }
-
-  // If user is in app mode but not authenticated, render Login Page
-  if (!currentUser) {
-    return (
-      <LoginPage
-        onLogin={(user) => {
-          handleLogin(user);
-          setViewMode('app');
-        }}
-        onBack={() => setViewMode('landing')}
       />
     );
   }
@@ -726,14 +733,42 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               </>
             )}
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="p-2 rounded-full bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition-all cursor-pointer ml-1"
-              title="Sign out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
+            {/* Google-style 'A' Avatar Profile */}
+            <div className="relative group ml-1">
+              <button
+                type="button"
+                title={`Google Account: ${currentUser?.name || 'Aarya'} (${currentUser?.email || 'aarya@in2peta.com'})`}
+                className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] p-[1.5px] shrink-0 shadow-md hover:ring-2 hover:ring-[#FFA84A]/40 transition-all cursor-pointer flex items-center justify-center group/avatar"
+              >
+                <div className="w-full h-full bg-[#0d0f17] group-hover/avatar:bg-[#161a26] rounded-full flex items-center justify-center font-extrabold text-[#FFA84A] text-xs tracking-tight transition-colors">
+                  {currentUser?.initial || 'A'}
+                </div>
+              </button>
+
+              {/* Dropdown Menu (Google Account card) */}
+              <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl bg-[#0c0e15] border border-white/10 shadow-2xl p-3.5 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50">
+                <div className="flex flex-col items-center text-center pb-3 border-b border-white/[0.08] mb-2.5">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] p-[2px] shadow-lg mb-2">
+                    <div className="w-full h-full bg-[#0d0f17] rounded-full flex items-center justify-center font-extrabold text-white text-base">
+                      {currentUser?.initial || 'A'}
+                    </div>
+                  </div>
+                  <div className="text-xs font-bold text-white truncate max-w-full">{currentUser?.name || 'Aarya'}</div>
+                  <div className="text-[11px] text-slate-400 truncate max-w-full">{currentUser?.email || 'aarya@in2peta.com'}</div>
+                  <div className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-[#FFA84A] bg-[#FFA84A]/10 border border-[#FFA84A]/25 px-2 py-0.5 rounded-full">
+                    Admin Workspace
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full text-center py-2 px-3 text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
