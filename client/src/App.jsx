@@ -649,11 +649,11 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
               <h1 className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 truncate">
                 {isGrowthcrew ? (
                   <>
-                    Scalora <span className="font-serif-accent font-normal italic text-[#FF5376] text-xl">Lead Gen & Outreach</span>
+                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FF5376] text-xl">Lead Gen & Outreach</span>
                   </>
                 ) : (
                   <>
-                    Scalora <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Social Media Studio</span>
+                    GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-xl">Social Media Studio</span>
                   </>
                 )}
               </h1>
@@ -663,7 +663,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
                 type="button"
                 onClick={() => setViewMode('landing')}
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm group ml-2"
-                title="Go back to Scalora Dashboard"
+                title="Go back to Dashboard"
               >
                 <ArrowRight className="w-3.5 h-3.5 text-[#FFA84A] rotate-180 group-hover:-translate-x-0.5 transition-transform" />
                 <span>Back to Dashboard</span>

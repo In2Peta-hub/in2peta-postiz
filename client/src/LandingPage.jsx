@@ -42,10 +42,10 @@ export default function LandingPage({ onNavigate, onLoginClick, currentUser, onL
             </div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-2xl tracking-tight text-white">
-                Scalora
+                GrowthCrew
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#FFA84A] bg-[#FFA84A]/10 border border-[#FFA84A]/25 px-2 py-0.5 rounded-full hidden sm:inline-block">
-                Marketing
+                by In2Peta
               </span>
             </div>
           </div>
@@ -251,11 +251,11 @@ export default function LandingPage({ onNavigate, onLoginClick, currentUser, onL
 
       {/* HERO SECTION (1:1 with Scalora Marketing design) */}
       <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center flex flex-col items-center">
-        {/* Scalora Marketing Badge */}
+        {/* GrowthCrew Badge */}
         <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#1b120c]/80 border border-[#FF6B4A]/30 backdrop-blur-xl mb-8 shadow-lg shadow-[#FF6B4A]/10 animate-in fade-in zoom-in-95 duration-500">
           <span className="text-[#FFA84A] text-sm">☀️</span>
           <span className="text-sm font-medium tracking-wide text-[#FFA84A]">
-            Scalora Marketing
+            GrowthCrew Platform
           </span>
         </div>
 
@@ -269,7 +269,7 @@ export default function LandingPage({ onNavigate, onLoginClick, currentUser, onL
 
         {/* Subhead */}
         <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed mb-10">
-          Scalora Marketing connects campaigns directly to revenue eliminating guesswork from your growth strategy.
+          GrowthCrew connects campaigns directly to revenue eliminating guesswork from your growth strategy.
         </p>
 
         {/* Hero CTA Button */}
@@ -299,30 +299,6 @@ export default function LandingPage({ onNavigate, onLoginClick, currentUser, onL
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   All Systems Operational
                 </span>
-              </div>
-            </div>
-
-            {/* Mockup Metric Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-xs text-slate-400 font-medium">Total Revenue Impact</div>
-                <div className="text-2xl font-bold text-white mt-1">$53,009.89</div>
-                <div className="text-[11px] text-emerald-400 font-semibold mt-1">↑ 18% vs last month</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-xs text-slate-400 font-medium">Social Posts Live</div>
-                <div className="text-2xl font-bold text-white mt-1">95 / 100</div>
-                <div className="text-[11px] text-[#FFA84A] font-semibold mt-1">Multi-channel sync</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-xs text-slate-400 font-medium">Outreach Leads</div>
-                <div className="text-2xl font-bold text-white mt-1">1,022</div>
-                <div className="text-[11px] text-sky-400 font-semibold mt-1">Verified Inboxes</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-xs text-slate-400 font-medium">Deliverability</div>
-                <div className="text-2xl font-bold text-white mt-1">99.8%</div>
-                <div className="text-[11px] text-emerald-400 font-semibold mt-1">Meta + AgentMail</div>
               </div>
             </div>
 
@@ -458,9 +434,9 @@ export default function LandingPage({ onNavigate, onLoginClick, currentUser, onL
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-slate-500">
           <div className="flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-[#FFA84A]" />
-            <span className="text-white font-bold">Scalora Marketing by In2Peta</span>
+            <span className="text-white font-bold">GrowthCrew by In2Peta</span>
             <span>•</span>
-            <span>Predictable Growth Platform</span>
+            <span>AI Growth Platform</span>
           </div>
 
           <div className="flex items-center gap-6">

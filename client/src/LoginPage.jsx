@@ -76,7 +76,7 @@ export default function LoginPage({ onLogin, onBack }) {
           </div>
 
           <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
-            Scalora <span className="font-serif-accent font-normal italic text-[#FFA84A] text-2xl">Marketing</span>
+            GrowthCrew <span className="font-serif-accent font-normal italic text-[#FFA84A] text-2xl">by In2Peta</span>
           </h1>
           <p className="text-xs text-slate-400">Sign in to access your Social Media Studio and Lead Gen Dashboard</p>
         </div>
