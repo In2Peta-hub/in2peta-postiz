@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import LoginPage from './LoginPage';
 import OutreachPanel from './OutreachPanel';
+import LandingPage from './LandingPage';
 
 // Custom SVG Icons for Meta Social Channels
 const InstagramIcon = ({ className = 'w-4 h-4' }) => (
@@ -88,6 +89,9 @@ const SAMPLE_IN2PETA_MEDIA = [
 ];
 
 export default function App({ defaultTab = 'studio', apiUrl } = {}) {
+  // View mode: 'landing' (Scalora marketing page) | 'app' (Studio / Outreach dashboard) | 'login'
+  const [viewMode, setViewMode] = useState('landing');
+
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -107,6 +111,7 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('growthcrew_auth');
+    setViewMode('landing');
     showToast('Signed out successfully.', 'info');
   };
 
@@ -535,9 +540,43 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
     }
   };
 
-  // If user is not authenticated, render Login Page
+  // If user requested Login mode, render Login Page
+  if (viewMode === 'login') {
+    return (
+      <LoginPage
+        onLogin={(user) => {
+          handleLogin(user);
+          setViewMode('app');
+        }}
+        onBack={() => setViewMode('landing')}
+      />
+    );
+  }
+
+  // If viewMode is 'landing', render Landing Page
+  if (viewMode === 'landing') {
+    return (
+      <LandingPage
+        onNavigate={(mode) => {
+          switchProductMode(mode === 'leadgen' ? 'growthcrew' : 'social');
+          setViewMode('app');
+        }}
+        onLoginClick={() => setViewMode('login')}
+      />
+    );
+  }
+
+  // If user is in app mode but not authenticated, render Login Page
   if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} />;
+    return (
+      <LoginPage
+        onLogin={(user) => {
+          handleLogin(user);
+          setViewMode('app');
+        }}
+        onBack={() => setViewMode('landing')}
+      />
+    );
   }
 
   const queueList = queueData.queue || [];
@@ -639,6 +678,16 @@ export default function App({ defaultTab = 'studio', apiUrl } = {}) {
           <div className="flex items-center gap-3 shrink-0">
             {!isGrowthcrew && (
               <>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('landing')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
+                  title="View Scalora Marketing landing page"
+                >
+                  <Globe className="w-3.5 h-3.5 text-[#FFA84A]" />
+                  <span className="hidden sm:inline">Website</span>
+                </button>
+
                 <a
                   href={IN2PETA_EXPLORE_URL}
                   target="_blank"

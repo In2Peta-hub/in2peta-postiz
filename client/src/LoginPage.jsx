@@ -7,7 +7,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, onBack }) {
   const [email, setEmail] = useState('admin@growthcrew.io');
   const [password, setPassword] = useState('growthcrew2026');
   const [rememberMe, setRememberMe] = useState(true);
@@ -19,7 +19,7 @@ export default function LoginPage({ onLogin }) {
     setTimeout(() => {
       onLogin({
         email,
-        name: 'PostPulse Admin',
+        name: 'Scalora Admin',
         role: 'Creative Director',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       });
@@ -31,8 +31,8 @@ export default function LoginPage({ onLogin }) {
     setLoading(true);
     setTimeout(() => {
       onLogin({
-        email: 'demo@growthcrew.io',
-        name: 'PostPulse Demo',
+        email,
+        name: 'Scalora Demo User',
         role: 'Administrator',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       });
@@ -45,6 +45,15 @@ export default function LoginPage({ onLogin }) {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FF6B4A]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#8B5CF6]/10 rounded-full blur-3xl pointer-events-none" />
 
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/10 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all"
+        >
+          <span>← Back to Website</span>
+        </button>
+      )}
+
       <div className="w-full max-w-md scalora-card-glow rounded-3xl p-8 relative z-10 space-y-7 shadow-2xl">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl p-[1.5px] bg-gradient-to-tr from-[#FF6B4A] via-[#FF5376] to-[#FFA84A] shadow-xl shadow-[#FF6B4A]/25 mx-auto">
@@ -54,7 +63,7 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
-            PostPulse <span className="font-serif-accent font-normal italic text-[#FFA84A] text-2xl">Studio</span>
+            Scalora <span className="font-serif-accent font-normal italic text-[#FFA84A] text-2xl">Marketing</span>
           </h1>
         </div>
 
