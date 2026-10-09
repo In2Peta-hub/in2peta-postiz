@@ -418,21 +418,35 @@ async def publish_now(post_id: str):
 
     # 1. Direct Meta Graph API publishing if Page token configured (e.g. on Render)
     fb_direct_result = None
-    if CONFIG.FB_PAGE_ACCESS_TOKEN and CONFIG.FB_PAGE_ID:
+    has_valid_fb_token = bool(
+        CONFIG.FB_PAGE_ACCESS_TOKEN 
+        and CONFIG.FB_PAGE_ACCESS_TOKEN.strip() 
+        and not CONFIG.FB_PAGE_ACCESS_TOKEN.startswith("Your ")
+    )
+    if has_valid_fb_token and CONFIG.FB_PAGE_ID:
         try:
             fb_direct_result = FacebookService.publish_post(
                 page_id=CONFIG.FB_PAGE_ID,
-                access_token=CONFIG.FB_PAGE_ACCESS_TOKEN,
+                access_token=CONFIG.FB_PAGE_ACCESS_TOKEN.strip(),
                 message=clean_text,
                 image_url=media_url
             )
             print("Direct Facebook Publish Success:", fb_direct_result)
         except Exception as fb_err:
-            print("Direct Facebook Publish notice, trying Postiz:", fb_err)
+            print("Direct Facebook Publish Error:", fb_err)
+            raise HTTPException(status_code=502, detail=f"Meta / Facebook Graph API Error: {fb_err}")
 
-    # 2. Postiz publishing if direct Meta was not executed or as provider
+    # 2. Postiz publishing if direct Meta was not executed
     postiz_result = None
     if not fb_direct_result:
+        # Check if running in cloud (Render) where 127.0.0.1 is not reachable
+        is_cloud = bool(os.getenv("RENDER") or (os.getenv("PORT") and "127.0.0.1" in CONFIG.POSTIZ_API_URL))
+        if is_cloud and ("127.0.0.1" in CONFIG.POSTIZ_API_URL or "localhost" in CONFIG.POSTIZ_API_URL):
+            raise HTTPException(
+                status_code=400,
+                detail="Direct Facebook publishing requires 'FB_PAGE_ACCESS_TOKEN' to be set in your Render environment variables. Postiz at 127.0.0.1 is local to your laptop and cannot be reached from Render."
+            )
+
         if not integration_id:
             raise HTTPException(status_code=400, detail="No connected channel found. Please connect your channel first.")
 
