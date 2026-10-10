@@ -15,6 +15,7 @@ import {
   Loader2,
   X,
   AlertTriangle,
+  Plus,
 } from 'lucide-react';
 import LocationAutocomplete from './LocationAutocomplete';
 
@@ -320,6 +321,8 @@ export default function OutreachPanel() {
   const [reply, setReply] = useState({ subject: '', body: '' });
   const [showInboxDialog, setShowInboxDialog] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualName, setManualName] = useState('');
   const noticeTimer = useRef(null);
 
   const chosen = useMemo(
@@ -565,6 +568,44 @@ export default function OutreachPanel() {
     setActiveDraft((index) => Math.min(index, Math.max(0, nextLen - 1)));
     setConfirm(null);
     say('Draft discarded.', 'info');
+  }
+
+  function addManualLead(event) {
+    event?.preventDefault?.();
+    if (isBusy) return;
+    const email = manualEmail.trim();
+    const name = manualName.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      say('Enter a valid email address to add a lead.', 'error');
+      return;
+    }
+    const normalized = email.toLowerCase();
+    if (drafts.some((item) => String(item.email || '').trim().toLowerCase() === normalized)) {
+      say(`${email} is already in review.`, 'error');
+      return;
+    }
+    if (!inboxId) {
+      say('Choose a sending inbox first, then add the lead.', 'error');
+      return;
+    }
+    const entry = {
+      email,
+      name: name || email.split('@')[0],
+      company: name || '',
+      subject: '',
+      body: '',
+      status: 'draft',
+      senderInboxId: inboxId,
+      manual: true,
+    };
+    setDrafts((current) => {
+      const next = [...current, entry];
+      setActiveDraft(next.length - 1);
+      return next;
+    });
+    setManualEmail('');
+    setManualName('');
+    say(`Added ${email} to review. Write the subject and body, then approve.`, 'success');
   }
 
   async function openThread(lead) {
@@ -981,6 +1022,36 @@ export default function OutreachPanel() {
               )}
             </div>
 
+            <form onSubmit={addManualLead} className="rounded-2xl border border-white/[0.06] bg-[#090b10]/60 px-3 py-3 space-y-2.5">
+              <p className="text-[11px] font-bold text-slate-300">Add lead manually</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="email"
+                  value={manualEmail}
+                  onChange={(event) => setManualEmail(event.target.value)}
+                  placeholder="name@company.com"
+                  disabled={isBusy}
+                  aria-label="Manual lead email"
+                  className={FIELD}
+                />
+                <input
+                  type="text"
+                  value={manualName}
+                  onChange={(event) => setManualName(event.target.value)}
+                  placeholder="Name or company (optional)"
+                  disabled={isBusy}
+                  aria-label="Manual lead name or company"
+                  className={FIELD}
+                />
+              </div>
+              <button type="submit" disabled={isBusy || !manualEmail.trim()} className={GHOST_BTN} title={!inboxId ? 'Choose a sending inbox first' : 'Add this email to review'}>
+                <Plus className="w-3.5 h-3.5" /> Add to review
+              </button>
+              {!inboxId && (
+                <p className="text-[11px] text-slate-500">Choose a sending inbox below to enable manual entry.</p>
+              )}
+            </form>
+
             {busy === 'draft' ? (
               <LoadingRows label="Writing drafts…" />
             ) : !draft ? (
@@ -1037,8 +1108,9 @@ export default function OutreachPanel() {
                         onConfirm: approveDraft,
                       })
                     }
-                    disabled={draft.status !== 'draft' || isBusy}
+                    disabled={draft.status !== 'draft' || isBusy || !draft.subject?.trim() || !draft.body?.trim()}
                     className={PRIMARY_BTN}
+                    title={draft.status === 'draft' && (!draft.subject?.trim() || !draft.body?.trim()) ? 'Add a subject and body before sending' : undefined}
                   >
                     {busy === 'send' ? (
                       <>
