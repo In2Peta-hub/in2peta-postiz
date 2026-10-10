@@ -21,8 +21,11 @@ class Config:
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 
     # Direct Meta / Facebook Graph API integration (no Docker/Temporal dependency required)
-    FB_PAGE_ID: str = os.getenv("FB_PAGE_ID", "61594485176950")
-    FB_PAGE_ACCESS_TOKEN: str = os.getenv("FB_PAGE_ACCESS_TOKEN", "")
+    FB_PAGE_ID: str = os.getenv("FB_PAGE_ID", "1306999285838432")
+    FB_PAGE_ACCESS_TOKEN: str = os.getenv(
+        "FB_PAGE_ACCESS_TOKEN",
+        "EAAg1wV1x46IBSpuMpOtCEpMqZAhwNZByLcKlxYNqaRwcHZCYLBFRglbK2kz1DkQFTulFwI6rDffZCKF6PTmHO08ZBZAPnBuvkYdRZA9c93LpLZB3YhyOcELPWj7z7KNifwmmFLQDbBPSlVSMUBZA85oyaLt4gPih945dB4QKYKRhZCRLJMm4E021EvX094hWFZAgDxsYuNZCBzVz6gbrDAIfkoAaU0tcsnhvh3IMPPcZANzC82cMZD"
+    )
 
     # GrowthCrew outreach (ported from the gpu_platform Fastify module)
     CORECLAW_API_KEY: str = os.getenv("CORECLAW_API_KEY", "")
